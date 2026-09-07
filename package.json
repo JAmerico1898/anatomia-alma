@@ -1,0 +1,37 @@
+{
+  "name": "anatomia-alma",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "check": "tsc --noEmit",
+    "validate:corpus": "node scripts/validate-corpus.mjs",
+    "validate:scene": "node scripts/validate-scene.mjs",
+    "test:e2e": "playwright test",
+    "audit": "node scripts/auditar.mjs",
+    "verify": "npm run check && npm run validate:corpus && npm run validate:scene && npm run build && npm run test:e2e"
+  },
+  "dependencies": {
+    "next": "^16.3.4",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "three": "^0.185.1"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
+    "@playwright/test": "^1.63.0",
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "^26.5.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
+    "@types/three": "^0.185.4",
+    "axe-core": "^4.13.0",
+    "esbuild": "^0.28.2",
+    "postcss": "^8.5.28",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^7.0.2"
+  }
+}

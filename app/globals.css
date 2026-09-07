@@ -1,0 +1,84 @@
+@import 'tailwindcss';
+
+/*
+  Tema escuro fixo (§8.1 do spec). A cena é luz sobre trevas e não sobrevive a
+  uma inversão sem recalibrar todos os shaders — não há alternador claro/escuro.
+*/
+@theme {
+  --color-fundo: #07080d;
+  --color-fundo-2: #0c0e16;
+  --color-vidro: oklch(1 0 0 / 4%);
+  --color-borda: oklch(1 0 0 / 8%);
+  --color-texto: #e6e7ee;
+  --color-texto-2: #a4a7b8;
+  --color-texto-3: #82869b;
+
+  /* Os sete raios do sol divino — I-3, p. 40. Cor é informação. */
+  --color-cascas: #8a7fb0;
+  --color-santuarios: #5f6f9e;
+  --color-focos: #d8b565;
+  --color-fogo-i: #b0574e;
+  --color-fogo-ii: #5b8ba6;
+  --color-figado-baco: #c08a52;
+  --color-correntes: #7e9a76;
+
+  /* Acentos de estado, usados só onde o livro os nomeia — II-5, p. 224. */
+  --color-ida-dialetica: #a33c3c;
+  --color-ida-nova: #9b6fc4;
+  --color-rosa: #e8c66a;
+
+  --font-serifa: var(--fonte-serifa), Georgia, 'Times New Roman', serif;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: var(--color-fundo);
+  color: var(--color-texto);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Painéis glass do §8.1. */
+.vidro {
+  background: color-mix(in oklab, var(--color-fundo-2) 72%, transparent);
+  backdrop-filter: blur(14px) saturate(1.2);
+  border: 1px solid var(--color-borda);
+}
+
+/* Citações e verbetes do Glossário, ecoando o Adobe Garamond do miolo. */
+.serifa {
+  font-family: var(--font-serifa);
+}
+
+/* Rótulos na cena — §8.2. */
+.rotulo {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+::selection {
+  background: color-mix(in oklab, var(--color-rosa) 30%, transparent);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-rosa);
+  outline-offset: 2px;
+}

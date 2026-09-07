@@ -1,0 +1,113 @@
+import { expect, test, type Page } from '@playwright/test';
+
+/**
+ * Os cinco contratos do §11 — os que quebram em silêncio. Nada de comparação
+ * de pixels: shaders e partículas tornam capturas instáveis, e congelar relógio
+ * e semente para estabilizá-las é trabalho a serviço de um teste que ninguém
+ * pediu.
+ */
+
+const detalhe = (p: Page) => p.getByRole('dialog', { name: /^Detalhe:/ });
+
+async function abrirExplorador(p: Page, query = '') {
+  await p.goto(`/${query}`);
+  // A cena monta o canvas assim que o cliente hidrata.
+  await expect(p.locator('canvas')).toBeVisible();
+}
+
+test('1 · selecionar uma estrutura na cena abre o Sheet com o nome certo', async ({ page }) => {
+  // Um sistema sozinho faz a cena rotular tudo o que couber. Usamos a própria
+  // projeção do app para saber ONDE uma estrutura está na tela, e então
+  // clicamos ali — o clique atravessa o raycast de verdade, sem atalho e sem
+  // depender de adivinhar que o centro da tela tem alguma coisa.
+  await abrirExplorador(page, '?sistemas=focos');
+
+  const rotulo = page.locator('span.rotulo').first();
+  await expect(rotulo).toBeVisible();
+
+  // Os rótulos são reprojetados a ~12 Hz, e enquanto o canvas ainda se
+  // dimensiona a desconflitação pode trocar qual deles sobrevive. Espera-se a
+  // projeção estabilizar antes de medir, em vez de disputar com ela.
+  const instantaneo = async () => {
+    const b = await rotulo.boundingBox();
+    return `${(await rotulo.textContent())?.trim()}@${Math.round(b!.x)},${Math.round(b!.y)}`;
+  };
+  let anterior = await instantaneo();
+  await expect
+    .poll(async () => {
+      const atual = await instantaneo();
+      const estavel = atual === anterior;
+      anterior = atual;
+      return estavel;
+    })
+    .toBe(true);
+
+  // textContent, não innerText: o rótulo é exibido em caixa alta por CSS, e o
+  // título do Sheet não é.
+  const nomeEsperado = (await rotulo.textContent())!.trim();
+  const alvo = (await rotulo.boundingBox())!;
+
+  // O rótulo é desenhado com `left: x` e `top: y - 7` sobre o ponto projetado;
+  // desfazendo esse deslocamento chega-se ao ponto exato da estrutura.
+  await page.mouse.click(alvo.x, alvo.y + 7, { delay: 40 });
+
+  await expect(detalhe(page)).toBeVisible();
+  await expect(page).toHaveURL(/foco=/);
+  await expect(detalhe(page).getByRole('heading', { name: nomeEsperado })).toBeVisible();
+});
+
+test('2 · isolar oculta o resto; limpar a seleção restaura', async ({ page }) => {
+  await abrirExplorador(page, '?foco=rosa-do-coracao');
+  await expect(detalhe(page).getByRole('heading', { name: 'Rosa-do-coração' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Isolar estrutura' }).click();
+  await expect(page).toHaveURL(/isolar=1/);
+  await expect(page.getByRole('button', { name: 'Mostrar tudo' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Fechar detalhe' }).click();
+  await expect(detalhe(page)).toBeHidden();
+  await expect(page).not.toHaveURL(/isolar=1/);
+  await expect(page).not.toHaveURL(/foco=/);
+});
+
+test('3 · busca por sinônimo encontra a rosa-do-coração', async ({ page }) => {
+  await abrirExplorador(page);
+
+  await page.locator('body').press('/');
+  const busca = page.getByRole('dialog', { name: 'Buscar estrutura' });
+  await expect(busca).toBeVisible();
+
+  await busca.getByRole('searchbox').fill('átomo-centelha-do-espírito');
+  await busca.getByRole('button', { name: /Rosa-do-coração/ }).click();
+
+  await expect(page).toHaveURL(/foco=rosa-do-coracao/);
+  await expect(detalhe(page).getByRole('heading', { name: 'Rosa-do-coração' })).toBeVisible();
+});
+
+test('4 · trocar de modo preserva a estrutura selecionada e atualiza a URL', async ({ page }) => {
+  await abrirExplorador(page, '?modo=senda&grau=5&foco=cordao-ida');
+  await expect(detalhe(page).getByRole('heading', { name: 'Cordão simpático esquerdo' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Duas naturezas' }).click();
+
+  await expect(page).toHaveURL(/modo=duas-naturezas/);
+  await expect(page).toHaveURL(/foco=cordao-ida/);
+  await expect(detalhe(page).getByRole('heading', { name: 'Cordão simpático esquerdo' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Senda' }).click();
+  await expect(page).not.toHaveURL(/modo=duas-naturezas/);
+  await expect(detalhe(page).getByRole('heading', { name: 'Cordão simpático esquerdo' })).toBeVisible();
+});
+
+test('5 · abaixo de 1024px, duas naturezas renderiza alternada, não dividida', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await abrirExplorador(page, '?modo=duas-naturezas');
+
+  // A apresentação alternada expõe o toggle dialético ⇄ novo homem.
+  await expect(page.getByRole('button', { name: /dialético ⇄/ })).toBeVisible();
+  await expect(page.getByText('novo homem', { exact: true })).toBeHidden();
+
+  // E a escolha manual sobrepõe o padrão do viewport, indo para a URL.
+  await page.getByRole('button', { name: 'dividida', exact: true }).click();
+  await expect(page).toHaveURL(/apresentacao=dividida/);
+});
