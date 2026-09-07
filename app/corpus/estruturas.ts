@@ -835,7 +835,7 @@ export const ESTRUTURAS_BRUTAS: readonly Bruta[] = [
     nome: 'Rins',
     sistema: 'figado-baco',
     sinonimos: [],
-    posicao: [0, -0.15, -0.07],
+    posicao: [0, -0.15, -0.055],
     forma: { tipo: 'par', offset: [0.07, 0, 0], raio: 0.035 },
     descricao:
       'Parte do domínio do eu sanguíneo. O livro os nomeia sem descrevê-los em separado: junto com o fígado, o baço e as suprarrenais, e com o plexo solar, eles formam o domínio do ser-desejo. Seu destino é o do sistema inteiro.',
@@ -856,7 +856,7 @@ export const ESTRUTURAS_BRUTAS: readonly Bruta[] = [
     nome: 'Suprarrenais',
     sistema: 'figado-baco',
     sinonimos: [],
-    posicao: [0, -0.1, -0.07],
+    posicao: [0, -0.1, -0.05],
     forma: { tipo: 'par', offset: [0.07, 0, 0], raio: 0.018 },
     descricao:
       'Como os rins, nomeadas pelo livro como parte do domínio do eu sanguíneo, sem descrição própria. Estão aqui porque o livro as inclui na lista, e a honestidade do atlas exige que o que ele nomeia apareça.',
