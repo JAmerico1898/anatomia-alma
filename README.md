@@ -35,7 +35,12 @@ npm run validate:corpus              as 9 invariantes do corpus
 npm run validate:scene               posições, rótulos, raycast, os 8 graus
 npm run test:e2e                     contratos de interação, 3 viewports
 npm run build
+npm run audit                        4G simulado, axe-core, movimento reduzido
+npm run verify                       tudo acima, em sequência
 ```
+
+`npm run audit` precisa de um servidor de produção de pé (`npm run build &&
+npm run start`) e aceita a URL como argumento.
 
 Utilitário de diagnóstico, quando o texto-fonte está presente:
 
@@ -57,6 +62,19 @@ node scripts/dump.mjs 224-227              o texto de um intervalo de páginas
 - O Glossário é gerado do livro: só a fronteira termo/definição é declarada, e o
   gerador falha se o bloco extraído não começar exatamente pelo termo. Nenhuma
   palavra de fora entra numa definição.
+
+## Estado da verificação
+
+Medido nesta máquina, não afirmado:
+
+| Comando | Resultado |
+|---|---|
+| `tsc --noEmit` | limpo |
+| `validate-corpus` | 42 estruturas, 7 sistemas, 68 verbetes, 8 graus, 95 citações conferidas contra o livro |
+| `validate-scene` | 29 estruturas concretas alcançáveis por raycast em 4 vistas, nenhuma fora da figura, rótulos sem colisão, 8 graus distintos e estáveis |
+| `playwright` | 15/15 nos 3 viewports |
+| `audit` | `/` em 931 ms sob 4G simulado; 0 violações graves de axe (wcag2a/aa) em 4 rotas; cena estática com movimento reduzido |
+| `build` | sem avisos, 5 rotas estáticas |
 
 ## O que não foi testado
 

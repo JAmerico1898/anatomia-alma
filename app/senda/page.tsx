@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { PaginaTexto } from '../components/pagina-texto';
 import { ESTRUTURA_POR_ID, SENDA, SISTEMA_POR_ID } from '../corpus/corpus';
+import { MiniCena } from './mini-cena';
 
 export const metadata: Metadata = {
   title: 'A senda sétupla',
@@ -16,9 +17,10 @@ export default function Senda() {
       titulo="A senda sétupla"
       subtitulo="A fé não é um degrau: é a chave que os abre. Os sete graus seguem a ordem da Segunda Epístola de Pedro, e cada um deles corresponde a uma mudança que o livro afirma ser corporal — não apenas mística."
     >
-      <ol className="space-y-16">
+      <MiniCena />
+      <ol className="space-y-16 lg:pr-0 xl:max-w-2xl">
         {SENDA.map((d) => (
-          <li key={d.grau} id={`grau-${d.grau}`} className="scroll-mt-24">
+          <li key={d.grau} id={`grau-${d.grau}`} data-grau={d.grau} className="scroll-mt-24">
             <div className="flex items-baseline gap-3">
               <span className="rotulo tabular-nums text-[var(--color-texto-3)]">
                 {d.grau === 0 ? 'chave' : `grau ${d.grau}`}

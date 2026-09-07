@@ -722,3 +722,38 @@ painel `Sistemas`.
 - **`/senda` é montada só do corpus**, sem reproduzir a Parte II.
 - **`livro/` não é versionado.** O texto-fonte fica local; o que sobe é o
   `corpus.ts`, com trechos identificados por capítulo e página.
+
+### E10 · São 29 estruturas concretas, não 33 (§10 Fase 2)
+
+O critério da Fase 2 falava em "as 33 estruturas concretas", número que nunca
+fechou com o próprio §6.3: aquela tabela lista 28 entradas posicionadas. Com a
+`constante-de-hidrogenio` promovida a `foco` — o livro lhe dá sede determinada
+no sistema do fogo serpentino (II-5, p. 223) —, o inventário real é de **29
+concretas e 13 abstratas**. O validador trava esse número.
+
+### E11 · Contraste: `--color-texto-3` subiu de `#6f7385` para `#82869b`
+
+O §8.4 exige AA em todo texto sobre glass. O cinza original rendia 4.26:1 sobre
+o fundo e 4.10:1 sobre os painéis — reprovado. O novo rende 5.56:1 e 5.35:1.
+A auditoria (`npm run audit`) mede isso com axe-core em vez de afirmar.
+
+### E12 · Três defeitos que só a verificação encontrou
+
+Registrados porque explicam decisões de código que, lidas isoladamente,
+pareceriam excesso de zelo:
+
+1. **O raycast ignorava a visibilidade do objeto pai.** Ao receber uma lista
+   explícita de malhas, o three não consulta `visible` na cadeia de pais — logo,
+   clicar na cena selecionava estruturas de sistemas desligados. A filtragem é
+   feita ao consumir os acertos.
+2. **A prioridade mais baixa da figura não pode vir da ordem do array de
+   alvos**, porque o raycaster devolve os acertos ordenados por distância. Ela
+   também é aplicada ao consumir os acertos.
+3. **`updateMatrixWorld` faltando fazia o validador passar por acaso.** Sem
+   ele, toda a cena é tratada como estando na origem, e um raio pelo centro do
+   corpo acerta quase tudo. `aplicarEstado` agora fecha atualizando as matrizes.
+
+### E13 · A miniatura de `/senda` só monta a partir de 1024px
+
+Abaixo disso ela tomaria metade da tela do texto — que é o conteúdo da página —
+para abrir um segundo contexto WebGL.
