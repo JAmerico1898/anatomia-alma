@@ -960,8 +960,11 @@ degraus. A presença do átomo não é confundida com sua posse consciente.
 
 `grauDeAtivacao` deixa de existir. Cada estrutura declara `processos`, compostos
 por fase (`inicia`, `cresce`, `substitui`, `extingue`, `completa`) e intervalo.
-No quinto degrau, a nova personalidade aparece como uma segunda malha dentro da
-silhueta natural: começa com uma pedra e cresce enquanto a antiga diminui.
+No quinto degrau, a nova personalidade aparece como uma segunda malha, e o grau
+em que um processo começa já tem de mostrar que ele começou — quem deitou apenas
+uma pedra já iniciou a construção (II-5 p. 226). É `progressoComEstreia` que
+garante isso: uma rampa 5→7 crua valeria zero exatamente no grau 5, que é onde o
+livro situa a mudança corporal.
 
 As conexões deixam de ser arestas simétricas. `Relacao` preserva `origem`,
 `destino`, `tipo`, verbo e, quando cabível, condição e grau. O detalhe lê esses
@@ -970,9 +973,42 @@ cadeia rosa → timo → hormônio → pequena circulação → cabeça, a entra
 e saída pelo fígado, e o circuito cabeça → Pingalá → plexo sacro → Idá → cabeça.
 
 O ser aural não apenas desaparece: focos antigos se apagam e focos azuis novos
-se inflamam gradualmente, formando um firmamento distinto ligado ao santuário
-da cabeça, à nova consciência e à personalidade nascente (III-11 pp. 355–356).
+se inflamam gradualmente, ligados ao santuário da cabeça, à nova consciência e à
+personalidade nascente (III-11 pp. 355–356). O firmamento em si, porém, **não
+nasce no quinto degrau**: a lipika já arde no estado natural, e o que a senda faz
+é renová-la — um novo céu e uma nova terra. As estrelas velhas partem acesas; o
+que muda de 5 a 7 é qual das duas famílias arde.
 
 O espectro sétuplo permanece como doutrina textual do capítulo I-3, mas a paleta
 dos sistemas é editorial. `Sistema` não possui mais `raio`; possui
 `corDeVisualizacao`.
+
+### E27 · A mudança do quinto degrau não pode apagar o interior
+
+A nova personalidade foi, primeiro, um wireframe do corpo inteiro desenhado por
+dentro da pele. Era evidente e estava errado: nos graus 5 a 7 as arestas de toda
+a malha caíam sobre coluna, fígado e rins, e o atlas perdia justamente o que ele
+existe para mostrar, e perdia mais quanto mais avançava a senda.
+
+Ela passa a ser uma **casca fresnel** com a forma do corpo, erguida por FORA da
+pele (escala 1.022 em torno do centro da caixa) — "na velha personalidade da
+natureza, porém fora dela" (II-5 p. 226). Opaca só na silhueta, transparente de
+frente: o contorno dourado fecha e o interior continua legível no grau 7. O aro é
+largo (`uPotencia` 3.2 contra os 9.0 das camadas) e ela tem forma humana, e é
+isso que a impede de ser lida como mais um anel do microcosmo. A pele velha
+esvai de 0.42 a 0.08, sem nunca sumir: o candidato ainda tem de viver segundo a
+natureza (II-5 p. 224).
+
+A casca **não entra no raycast**. Por estar por fora, ela cobriria a figura
+inteira, e a prioridade que dá a vez às estruturas internas só resolve o empate
+depois do acerto. A personalidade continua alcançável pela pele.
+
+As estrelas do firmamento ganham shader próprio: adensadas para 120, elas
+envolvem a figura, e as que se projetam sobre o tronco esconderiam os órgãos. O
+vértice mede o afastamento do ponto em relação ao eixo do corpo, na direção
+perpendicular à da câmera — quem cai sobre o corpo esmaece a 14%, quem está
+livre arde cheio. Como depende da câmera, o cálculo vive no shader.
+
+A invariante 8 de `validate-scene.mjs` trava tudo isso: nada na figura é
+wireframe, a casca não é alvo de raycast, ela é nula no grau 4 e evidente no 5,
+a pele esvai sem sumir, e o firmamento já arde antes da fé.

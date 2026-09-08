@@ -7,6 +7,7 @@ import {
   materialDaNovaPersonalidade,
   materialDeCamada,
   materialDeCorrente,
+  materialDeEstrelasAurais,
   materialDeFoco,
   materialDeOrgao,
   materialDeRegiao,
@@ -73,13 +74,27 @@ export function construirForma(e: Estrutura, anatomia: Anatomia): Construida {
       else if (f.estilo === 'orgao') malha.renderOrder = 5;
       if (f.estilo === 'personalidade-dupla') {
         malha.userData.papel = 'personalidade-antiga';
+        // "erguida na velha personalidade da natureza, porém FORA dela"
+        // (II-5, p.226): a casca envolve a pele, não se esconde sob ela.
+        // O escalonamento é em torno do centro da caixa, senão a figura
+        // inteira sobe — a origem da malha não é o centro do corpo.
         const nova = new THREE.Mesh(g, materialDaNovaPersonalidade());
-        nova.scale.set(0.985, 0.985, 0.985);
+        const k = 1.022;
+        const centro = new THREE.Vector3();
+        g.computeBoundingBox();
+        g.boundingBox?.getCenter(centro);
+        nova.scale.setScalar(k);
+        nova.position.copy(centro).multiplyScalar(1 - k);
         nova.renderOrder = 9;
         nova.userData.papel = 'personalidade-nova';
+        nova.material.userData.papel = 'casca-nova';
         const grupo = new THREE.Group();
         grupo.add(malha, nova);
-        return { objeto: grupo, ancora: v(parte.ancora), alvos: [malha, nova], materiais: [material, nova.material] };
+        // A casca NÃO é alvo de clique: por estar por fora, ela cobriria toda a
+        // figura no raycast, e a prioridade que dá a vez às estruturas internas
+        // só resolve o empate depois. A personalidade continua sendo alcançada
+        // pela pele.
+        return { objeto: grupo, ancora: v(parte.ancora), alvos: [malha], materiais: [material, nova.material] };
       }
       return { objeto: malha, ancora: v(parte.ancora), alvos: [malha], materiais: [material] };
     }
@@ -156,8 +171,8 @@ export function construirForma(e: Estrutura, anatomia: Anatomia): Construida {
     }
 
     case 'firmamento-aural': {
-      const antigas = new THREE.PointsMaterial({ color: '#854f4f', size: 0.025, transparent: true, opacity: 0.75 });
-      const novas = new THREE.PointsMaterial({ color: '#2f789c', size: 0.028, transparent: true, opacity: 0 });
+      const antigas = materialDeEstrelasAurais(new THREE.Color('#7d4242'), 0.05);
+      const novas = materialDeEstrelasAurais(new THREE.Color('#2f789c'), 0.056);
       const criar = (defasagem: number) => {
         const pos = new Float32Array(f.focos * 3);
         for (let i = 0; i < f.focos; i++) {

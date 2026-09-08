@@ -174,6 +174,7 @@ function assinatura(grau) {
           m.opacity?.toFixed(4),
           m.color?.getHexString?.(),
           m.uniforms?.uIntensidade?.value?.toFixed(4),
+          m.uniforms?.uOpacidade?.value?.toFixed(4),
           m.size?.toFixed(4),
         ].join(','),
       );
@@ -202,6 +203,57 @@ for (const e of ESTRUTURAS) {
     ok(progressoDoProcesso(p, p.fim) === 1, `7: ${e.id}/${p.fase} não completa no fim`);
   }
 }
+
+// ── 8. A mudança do quinto degrau é evidente SEM apagar o interior.
+// Foi um wireframe do corpo inteiro, e nos graus 5 a 7 ele cobria os órgãos.
+// Estas invariantes existem para que isso não volte.
+function materialPorPapel(id, papel) {
+  let achado = null;
+  cena.nos.get(id)?.objeto.traverse((o) => { if (o.userData.papel === papel) achado = o.material; });
+  return achado;
+}
+const noGrau = (g, ler) => { cena.aplicarEstado({ ...ESTADO_INICIAL, grau: g }); return ler(); };
+
+// 8a. Nada na figura é wireframe: era isso que injetava as arestas da malha
+// inteira por cima de coluna, fígado e rins.
+for (const e of ESTRUTURAS) {
+  for (const m of cena.nos.get(e.id)?.materiais ?? []) {
+    ok(!m.wireframe, `8: ${e.id} voltou a desenhar wireframe sobre a figura`);
+  }
+}
+
+// 8b. A casca não entra no raycast: por estar FORA da pele, ela cobriria a
+// figura toda e roubaria o clique de qualquer estrutura interna.
+const casca = materialPorPapel('personalidade', 'personalidade-nova');
+ok(casca, '8: a nova personalidade não foi construída');
+let cascaEhAlvo = false;
+for (const a of cena.alvos) if (a.userData.papel === 'personalidade-nova') cascaEhAlvo = true;
+ok(!cascaEhAlvo, '8: a casca da nova personalidade virou alvo de raycast');
+
+// 8c. Ela é imperceptível até o grau 4, acende no 5 — "essa mudança corporal é
+// que é a piedade" (II-5, p.222) — e adensa até o 7.
+const aceso = (g) => noGrau(g, () => casca?.uniforms?.uIntensidade?.value ?? 0);
+ok(aceso(4) === 0, `8: a casca já acende no grau 4 (${aceso(4)})`);
+ok(aceso(5) > 0.4, `8: a mudança do grau 5 não é evidente (${aceso(5).toFixed(3)})`);
+ok(aceso(7) > aceso(5) * 1.5, `8: a casca não adensa do grau 5 ao 7`);
+
+// 8d. A pele velha esvai até fantasma, mas não some: o candidato ainda tem de
+// viver segundo a natureza (II-5, p.224).
+const pele = materialPorPapel('personalidade', 'personalidade-antiga');
+const opacaEm = (g) => noGrau(g, () => pele?.opacity ?? 0);
+ok(opacaEm(7) < opacaEm(4) * 0.4, `8: a pele velha não esvai (${opacaEm(4)} → ${opacaEm(7)})`);
+ok(opacaEm(7) > 0.02, `8: a pele velha desapareceu por completo no grau 7`);
+
+// 8e. O firmamento JÁ ARDE no estado natural: a lipika não nasce no quinto
+// degrau, ela é renovada — "um novo céu e uma nova terra" (III-11, p.356).
+const velhas = materialPorPapel('focos-aurais', 'firmamento-antigo');
+const novas = materialPorPapel('focos-aurais', 'firmamento-novo');
+const luzDe = (m, g) => noGrau(g, () => m?.uniforms?.uOpacidade?.value ?? 0);
+ok(luzDe(velhas, -1) > 0.5, `8: o firmamento não existe antes da fé (${luzDe(velhas, -1)})`);
+ok(luzDe(novas, -1) === 0, '8: as luzes novas já ardem no estado natural');
+ok(luzDe(velhas, 7) < luzDe(velhas, -1) * 0.25, '8: as luzes velhas não se apagam');
+ok(luzDe(novas, 7) > 0.5, '8: as luzes novas não se inflamam');
+ok(cena.nos.get('focos-aurais')?.materiais.every((m) => m.uniforms?.uMeiaLargura), '8: as estrelas não sabem onde o corpo está');
 
 cena.dispose();
 

@@ -85,6 +85,19 @@ export function progressoDoProcesso(processo: Processo, grau: number): number {
 }
 
 /**
+ * Progresso de um processo, com a estreia contando desde o primeiro grau.
+ *
+ * Uma rampa 5→7 crua vale zero exatamente no grau 5 — e o grau 5 é onde o livro
+ * diz que "essa mudança corporal É a piedade" (II-5, p.222). Quem deitou apenas
+ * uma pedra já iniciou a construção (II-5, p.226): o degrau em que o processo
+ * começa tem de mostrar que ele começou, não o estado anterior.
+ */
+export function progressoComEstreia(processo: Processo, grau: number): number {
+  if (grau < processo.inicio) return 0;
+  return 0.24 + progressoDoProcesso(processo, grau) * 0.76;
+}
+
+/**
  * Rampa de extinção da coluna comum e do fogo da consciência. O §7.1 as situa
  * "entre os graus 6 e 7"; é essa rampa que dá ao grau 6 um estado distinto sem
  * inventar nenhuma ativação que o livro não afirme (emenda E7).
@@ -139,6 +152,25 @@ export function construirCena(anatomia: Anatomia): CenaConstruida {
       ancoraRepouso: ancora.clone(),
       ancora: ancora.clone(),
       corBase: e.id === 'rosa-do-coracao' ? COR_ROSA.clone() : corDoSistema(e.sistema),
+    });
+  }
+
+  // O fade das estrelas do firmamento precisa saber onde o corpo está: elas
+  // esmaecem ao se projetar sobre ele. A caixa da personalidade é medida uma
+  // vez, aqui, porque a figura não se move — o que muda é só a câmera, e disso
+  // o shader dá conta sozinho.
+  const daPersonalidade = nos.get('personalidade');
+  if (daPersonalidade) {
+    const caixa = new THREE.Box3().setFromObject(daPersonalidade.objeto);
+    const tamanho = caixa.getSize(new THREE.Vector3());
+    const centro = caixa.getCenter(new THREE.Vector3());
+    nos.get('focos-aurais')?.objeto.traverse((o) => {
+      const u = ((o as THREE.Points).material as THREE.ShaderMaterial | undefined)?.uniforms;
+      if (!u?.uEixo) return;
+      u.uEixo.value.set(centro.x, caixa.min.y, centro.z);
+      u.uMeiaLargura!.value = Math.max(tamanho.x, tamanho.z) / 2;
+      u.uAlturaMin!.value = caixa.min.y;
+      u.uAlturaMax!.value = caixa.max.y;
     });
   }
 
@@ -226,7 +258,9 @@ export function construirCena(anatomia: Anatomia): CenaConstruida {
         }
 
         const camada = m as THREE.ShaderMaterial;
-        if (camada.isShaderMaterial && camada.uniforms.uIntensidade) {
+        // A casca da nova personalidade também expõe `uIntensidade`, mas quem a
+        // governa são os processos, logo abaixo — não a ativação do estado.
+        if (camada.isShaderMaterial && camada.uniforms.uIntensidade && camada.userData.papel !== 'casca-nova') {
           let intensidade = 0.34 + t * 0.42 + realce * 0.6;
           // I-17 p. 169: o ser aural é demolido na medida em que o eu se demole.
           if (e.id === 'ser-aural') intensidade *= 1 - 0.75 * Math.min(1, Math.max(0, (estado.grau - 5) / 2));
@@ -247,21 +281,43 @@ export function construirCena(anatomia: Anatomia): CenaConstruida {
 
       if (e.id === 'personalidade') {
         const inicio = e.processos.filter((p) => p.fase === 'inicia').reduce((v, p) => Math.max(v, progressoDoProcesso(p, estado.grau)), 0);
-        const crescimento = e.processos.filter((p) => p.fase === 'cresce').reduce((v, p) => Math.max(v, progressoDoProcesso(p, estado.grau)), 0);
+        const crescimento = e.processos.filter((p) => p.fase === 'cresce').reduce((v, p) => Math.max(v, progressoComEstreia(p, estado.grau)), 0);
         no.objeto.traverse((o) => {
           const mesh = o as THREE.Mesh;
           const material = mesh.material as THREE.Material | undefined;
           if (!material) return;
-          if (o.userData.papel === 'personalidade-antiga') (material as THREE.MeshPhysicalMaterial).opacity = 0.42 * (1 - crescimento * 0.42);
-          if (o.userData.papel === 'personalidade-nova') (material as THREE.MeshStandardMaterial).opacity = inicio * 0.04 + crescimento * 0.48;
+          // A velha esvai até fantasma, mas nunca some: o candidato ainda tem
+          // de viver segundo a natureza (II-5, p.224). É essa queda, contra a
+          // casca que acende, que torna a troca legível — e é ela que devolve o
+          // interior da figura justamente nos graus em que ele sumia.
+          if (o.userData.papel === 'personalidade-antiga') {
+            (material as THREE.MeshPhysicalMaterial).opacity = 0.42 - crescimento * 0.34;
+          }
+          if (o.userData.papel === 'personalidade-nova') {
+            (material as THREE.ShaderMaterial).uniforms.uIntensidade!.value = inicio * 0.5 + crescimento * 0.9;
+          }
         });
       }
       if (e.id === 'focos-aurais') {
+        // O firmamento NÃO nasce no quinto degrau. A lipika já arde no estado
+        // natural; o que a senda faz é renová-la, "um novo céu e uma nova
+        // terra" (III-11, p.356). Por isso as estrelas velhas partem acesas e o
+        // que muda em 5→7 é qual das duas famílias arde.
+        const renovacao = e.processos
+          .filter((p) => p.fase === 'cresce')
+          .reduce((v, p) => Math.max(v, progressoComEstreia(p, estado.grau)), 0);
+        const apagamento = e.processos
+          .filter((p) => p.fase === 'extingue')
+          .reduce((v, p) => Math.max(v, progressoComEstreia(p, estado.grau)), 0);
         no.objeto.traverse((o) => {
-          const material = (o as THREE.Points).material as THREE.PointsMaterial | undefined;
-          if (!material) return;
-          if (o.userData.papel === 'firmamento-antigo') material.opacity = 0.75 * (1 - extincao * 0.88);
-          if (o.userData.papel === 'firmamento-novo') material.opacity = t * 0.9;
+          const material = (o as THREE.Points).material as THREE.ShaderMaterial | undefined;
+          if (!material?.uniforms?.uOpacidade) return;
+          if (o.userData.papel === 'firmamento-antigo') {
+            material.uniforms.uOpacidade.value = 0.72 * (1 - apagamento * 0.9) * (1 + realce * 0.3);
+          }
+          if (o.userData.papel === 'firmamento-novo') {
+            material.uniforms.uOpacidade.value = renovacao * 0.86 * (1 + realce * 0.3);
+          }
         });
       }
     }

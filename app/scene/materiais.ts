@@ -96,17 +96,125 @@ export function materialDaFigura(): THREE.MeshPhysicalMaterial {
   });
 }
 
-/** Corpo nascente: distinto da pele natural e inicialmente quase invisível. */
-export function materialDaNovaPersonalidade(): THREE.MeshStandardMaterial {
-  return new THREE.MeshStandardMaterial({
-    color: COR_NOVA_PERSONALIDADE,
-    emissive: COR_NOVA_PERSONALIDADE,
-    emissiveIntensity: 0.18,
+/**
+ * A nova personalidade: uma casca erguida FORA da velha (II-5, p.226).
+ *
+ * Foi wireframe do corpo inteiro, e era isso que apagava o interior: nos graus
+ * 5 a 7 as arestas de toda a malha caíam por cima dos órgãos. Aqui ela é
+ * fresnel, opaca só na silhueta — de frente o candidato continua transparente,
+ * e coluna, fígado e rins seguem legíveis no grau 7.
+ *
+ * `uPotencia` 3.2 contra os 9.0 das camadas: o aro é largo, não um fio. É o que
+ * a distingue de mais um anel do microcosmo, junto com o ouro e com o fato de
+ * ela ter a forma do corpo em vez de ser uma esfera.
+ */
+export function materialDaNovaPersonalidade(): THREE.ShaderMaterial {
+  const hsl = { h: 0, s: 0, l: 0 };
+  COR_NOVA_PERSONALIDADE.getHSL(hsl);
+  const doAro = new THREE.Color().setHSL(hsl.h, Math.min(1, hsl.s * 1.5), Math.min(hsl.l, 0.42));
+  return new THREE.ShaderMaterial({
     transparent: true,
-    opacity: 0,
-    roughness: 0.35,
     depthWrite: false,
-    wireframe: true,
+    side: THREE.DoubleSide,
+    uniforms: {
+      uCor: { value: doAro },
+      uIntensidade: { value: 0 },
+      uPotencia: { value: 3.2 },
+    },
+    vertexShader: /* glsl */ `
+      varying vec3 vNormalMundo;
+      varying vec3 vParaCamera;
+      void main() {
+        vec4 mundo = modelMatrix * vec4(position, 1.0);
+        vNormalMundo = normalize(mat3(modelMatrix) * normal);
+        vParaCamera = normalize(cameraPosition - mundo.xyz);
+        gl_Position = projectionMatrix * viewMatrix * mundo;
+      }
+    `,
+    fragmentShader: /* glsl */ `
+      uniform vec3 uCor;
+      uniform float uIntensidade;
+      uniform float uPotencia;
+      varying vec3 vNormalMundo;
+      varying vec3 vParaCamera;
+      void main() {
+        float borda = 1.0 - abs(dot(normalize(vNormalMundo), normalize(vParaCamera)));
+        float a = clamp(pow(borda, uPotencia) * uIntensidade, 0.0, 0.62);
+        gl_FragColor = vec4(uCor * a, a);
+      }
+    `,
+  });
+}
+
+/**
+ * Estrelas do firmamento microcósmico (a lipika).
+ *
+ * O firmamento não nasce no quinto degrau: ele já existe, e o que a senda faz é
+ * renová-lo — um novo céu e uma nova terra (III-11, p.356). Por isso as estrelas
+ * velhas ardem desde o estado natural, e nos graus 5 a 7 apagam enquanto as
+ * novas se inflamam NO MESMO firmamento.
+ *
+ * O fade não é enfeite: adensado, o firmamento envolve a figura, e as estrelas
+ * que caem sobre o tronco escondem justamente os órgãos. O vértice mede o
+ * afastamento do ponto em relação ao eixo do corpo, na direção perpendicular à
+ * da câmera; quem se projeta sobre o corpo esmaece, quem está livre arde cheio.
+ * Como depende da câmera, o cálculo tem de estar no shader, e não no material.
+ */
+export function materialDeEstrelasAurais(cor: THREE.Color, tamanho: number): THREE.ShaderMaterial {
+  return new THREE.ShaderMaterial({
+    transparent: true,
+    depthWrite: false,
+    uniforms: {
+      uCor: { value: cor.clone() },
+      uOpacidade: { value: 0 },
+      uTamanho: { value: tamanho },
+      /** Base do eixo vertical do corpo, em mundo. */
+      uEixo: { value: new THREE.Vector3() },
+      /** Meia-largura do corpo e faixa de altura que ele ocupa. */
+      uMeiaLargura: { value: 0.3 },
+      uAlturaMin: { value: -1 },
+      uAlturaMax: { value: 1 },
+    },
+    vertexShader: /* glsl */ `
+      uniform float uTamanho;
+      uniform vec3 uEixo;
+      uniform float uMeiaLargura;
+      uniform float uAlturaMin;
+      uniform float uAlturaMax;
+      varying float vLivre;
+      void main() {
+        vec4 mundo = modelMatrix * vec4(position, 1.0);
+
+        // Direção horizontal da câmera e a perpendicular a ela: é sobre esta
+        // que se mede o quanto a estrela escapa do corpo na tela.
+        vec2 paraCamera = normalize(cameraPosition.xz - uEixo.xz);
+        vec2 lateral = vec2(-paraCamera.y, paraCamera.x);
+        float desvio = abs(dot(mundo.xz - uEixo.xz, lateral));
+
+        float dentroDaAltura =
+          smoothstep(uAlturaMin - 0.12, uAlturaMin + 0.12, mundo.y) *
+          (1.0 - smoothstep(uAlturaMax - 0.12, uAlturaMax + 0.12, mundo.y));
+        float sobrepoe = (1.0 - smoothstep(uMeiaLargura * 0.7, uMeiaLargura * 1.5, desvio)) * dentroDaAltura;
+        vLivre = mix(1.0, 0.14, sobrepoe);
+
+        vec4 vista = viewMatrix * mundo;
+        gl_PointSize = uTamanho * 300.0 / max(0.001, -vista.z);
+        gl_Position = projectionMatrix * vista;
+      }
+    `,
+    fragmentShader: /* glsl */ `
+      uniform vec3 uCor;
+      uniform float uOpacidade;
+      varying float vLivre;
+      void main() {
+        // Ponto redondo: o quadrado padrão do GL vira grade visível quando o
+        // firmamento adensa.
+        float d = length(gl_PointCoord - vec2(0.5));
+        if (d > 0.5) discard;
+        float a = uOpacidade * vLivre * (1.0 - smoothstep(0.34, 0.5, d));
+        gl_FragColor = vec4(uCor * a, a);
+      }
+    `,
   });
 }
 

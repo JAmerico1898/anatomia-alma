@@ -1248,16 +1248,16 @@ export const ESTRUTURAS_BRUTAS: readonly Bruta[] = [
     sistema: 'correntes',
     sinonimos: ['luzes', 'estrelas do firmamento microcósmico'],
     posicao: [0, 0, 0],
-    forma: { tipo: 'firmamento-aural', raio: 1.2, focos: 28 },
+    forma: { tipo: 'firmamento-aural', raio: 1.2, focos: 120 },
     descricao:
       'As luzes do firmamento microcósmico: focos magnéticos que determinam a qualidade do campo espiritual magnético e, com isso, a natureza do que o sistema atrai da atmosfera. A personalidade corresponde à natureza dessas luzes — não o contrário. Os focos do período pré-luciferino estão adormecidos há éons porque não podem arder no fogo ímpio.',
     estadoDialetico:
       'Focos magnéticos que determinam a qualidade do campo magnético e, com isso, a natureza da personalidade.',
     estadoNovo:
-      'Os antigos focos do período pré-luciferino podem reacender, e o sol latente e extinto do firmamento se inflama.',
+      'O firmamento é o mesmo, mas suas luzes são outras: as antigas se apagam, os focos do período pré-luciferino reacendem e o sol latente e extinto se inflama — um novo céu e uma nova terra.',
     processos: [
       { fase: 'extingue', inicio: 5, fim: 7, descricao: 'As antigas estrelas perdem a luz.' },
-      { fase: 'cresce', inicio: 5, fim: 7, descricao: 'Novos focos se inflamam no firmamento em formação.' },
+      { fase: 'cresce', inicio: 5, fim: 7, descricao: 'Novas luzes se inflamam no mesmo firmamento, que é renovado e não criado.' },
     ],
     citacoes: [
       {
