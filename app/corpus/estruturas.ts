@@ -1,8 +1,8 @@
-import type { Estrutura, Vec3 } from './tipos';
+import type { Estrutura, Grau, Processo, Vec3 } from './tipos';
 
 /**
- * As 42 estruturas, sem `ligacoes` nem `verbetes` — ambas são derivadas em
- * corpus.ts a partir de relacoes.ts, e por isso simétricas por construção.
+ * As 42 estruturas, sem `relacoes` nem `verbetes` — ambas são derivadas em
+ * corpus.ts. As relações preservam a direção declarada em relacoes.ts.
  *
  * Sistema de coordenadas (§6.1 do spec): origem na rosa-do-coração, que o
  * Glossário (p. 376) situa no centro matemático do microcosmo. +y para cima,
@@ -14,7 +14,14 @@ import type { Estrutura, Vec3 } from './tipos';
  * malha. `validate-scene.mjs` prova que as duas não divergem.
  */
 
-type Bruta = Omit<Estrutura, 'ligacoes' | 'verbetes'>;
+type Bruta = Omit<Estrutura, 'relacoes' | 'verbetes'>;
+
+const processo = (inicio: Grau): Processo => ({
+  fase: 'inicia',
+  inicio,
+  fim: inicio,
+  descricao: 'A transformação torna-se perceptível neste estado da senda.',
+});
 
 /** Coluna do sacro ao atlas, com a lordose lombar e a cifose torácica. */
 const CURVA_ESPINAL: readonly Vec3[] = [
@@ -43,14 +50,18 @@ export const ESTRUTURAS_BRUTAS: readonly Bruta[] = [
     sistema: 'camadas',
     sinonimos: ['figura quádrupla', 'microplaneta', 'eu inferior'],
     posicao: [-0.001, -0.4, 0.001],
-    forma: { tipo: 'malha', parte: 'personalidade', estilo: 'pele' },
+    forma: { tipo: 'malha', parte: 'personalidade', estilo: 'personalidade-dupla' },
     descricao:
       'A mais interna das quatro esferas do sistema de vida, e a única que o mundo chama de "homem". O livro insiste que ela não é o microcosmo, mas seu núcleo desfigurado. É quádrupla: corpo material, corpo etérico, corpo de desejos e faculdade mental.',
     estadoDialetico:
       'Núcleo desfigurado de um microcosmo degenerado, com uma consciência que só alcança o campo de existência a que pertence.',
     estadoNovo:
       'Uma personalidade inteiramente nova é erguida na velha personalidade da natureza, porém fora dela.',
-    grauDeAtivacao: 5,
+    processos: [
+      { fase: 'inicia', inicio: 5, fim: 5, descricao: 'Uma única pedra já inicia a nova personalidade.' },
+      { fase: 'cresce', inicio: 5, fim: 7, descricao: 'A nova vida cresce enquanto a personalidade natural diminui.' },
+      { fase: 'completa', inicio: 7, fim: 7, descricao: 'O modelo assinala a culminação do percurso no novo homem.' },
+    ],
     citacoes: [
       {
         texto:
@@ -79,7 +90,7 @@ export const ESTRUTURAS_BRUTAS: readonly Bruta[] = [
       'Povoado pelas formas-pensamento de seu criador; atrai e repele substâncias em plena harmonia com a personalidade.',
     estadoNovo:
       'Recebe a imagem mental do homem celeste imortal, formada como concepção mental nascida da força da luz.',
-    grauDeAtivacao: 0,
+    processos: [processo(0)],
     citacoes: [
       {
         texto:
@@ -107,8 +118,11 @@ export const ESTRUTURAS_BRUTAS: readonly Bruta[] = [
     estadoDialetico:
       'Firmamento de centros sensoriais, centros de força e focos; portador do carma, que se arroja pelo espaço qual relâmpago vermelho-escuro.',
     estadoNovo:
-      'Demolido na medida em que o próprio eu se demole na endura; nele, um princípio-centelha-do-espírito jaz como sol latente e extinto.',
-    grauDeAtivacao: 7,
+      'Os pontos antigos se apagam enquanto novas luzes formam paulatinamente um novo firmamento.',
+    processos: [
+      { fase: 'extingue', inicio: 5, fim: 7, descricao: 'Os pontos magnéticos antigos começam a apagar-se.' },
+      { fase: 'substitui', inicio: 5, fim: 7, descricao: 'Novas luzes formam paulatinamente um novo firmamento.' },
+    ],
     citacoes: [
       {
         texto:
@@ -142,7 +156,7 @@ export const ESTRUTURAS_BRUTAS: readonly Bruta[] = [
       'Sintonizado com o campo magnético central desta natureza, que mantém o sistema encerrado nesta ordem.',
     estadoNovo:
       'Sintonizado com o campo eletromagnético da Fraternidade Universal, atraindo materiais de construção não originários desta natureza.',
-    grauDeAtivacao: 1,
+    processos: [processo(1)],
     citacoes: [
       {
         texto:
@@ -173,7 +187,7 @@ export const ESTRUTURAS_BRUTAS: readonly Bruta[] = [
       'Terceiro ego natural: pensamento, vontade, memória e imaginação, movidos pelos éteres mentais.',
     estadoNovo:
       'O archote da pineal é inflamado e o aluno entra em ligação de primeira mão com a luz universal da Gnosis.',
-    grauDeAtivacao: 2,
+    processos: [processo(2)],
     citacoes: [
       {
         texto:
@@ -202,7 +216,7 @@ export const ESTRUTURAS_BRUTAS: readonly Bruta[] = [
       'Segundo ego natural: vida de sentimentos e de desejos, alimentada pelos éteres astrais que o esterno capta.',
     estadoNovo:
       'Assimila ao mesmo tempo as duas naturezas — "guerra no imo", a espada na alma.',
-    grauDeAtivacao: 1,
+    processos: [processo(1)],
     citacoes: [
       {
         texto:
@@ -230,7 +244,7 @@ export const ESTRUTURAS_BRUTAS: readonly Bruta[] = [
       'Primeiro ego natural: a base sanguínea em que todo o carma acumulado do ser aural se manifesta.',
     estadoNovo:
       'Câmara terrena da torre dos mistérios, onde o plexo sacro se torna o plexo santificador.',
-    grauDeAtivacao: 5,
+    processos: [processo(5)],
     citacoes: [
       {
         texto:
@@ -269,7 +283,7 @@ export const ESTRUTURAS_BRUTAS: readonly Bruta[] = [
       'Latente e de tal modo enclausurada que não pode ser despertada pela qualidade sanguínea do homem comum.',
     estadoNovo:
       'Desperta e vibra: um dos sete ventrículos do coração se abre, o fogo nele contido se inflama e irradia sobre o timo.',
-    grauDeAtivacao: 0,
+    processos: [processo(0)],
     citacoes: [
       {
         texto:
@@ -304,7 +318,7 @@ export const ESTRUTURAS_BRUTAS: readonly Bruta[] = [
       'Atrofia após a infância, quando se esgota o depósito de forças preenchido pelos pais da criança.',
     estadoNovo:
       'Reativado; seu hormônio providencia a projeção do fogo gnóstico no santuário da cabeça.',
-    grauDeAtivacao: 1,
+    processos: [processo(1)],
     citacoes: [
       {
         texto:
@@ -333,7 +347,7 @@ export const ESTRUTURAS_BRUTAS: readonly Bruta[] = [
       'Irradia um desejo, uma radiação buscadora e cobiçante, e com sua faculdade atrativa acolhe as energias que a satisfarão.',
     estadoNovo:
       'Emite um anseio de outra natureza — o suspiro dos ossos — e por ele o candidato é alimentado.',
-    grauDeAtivacao: 1,
+    processos: [processo(1)],
     citacoes: [
       {
         texto:
@@ -367,7 +381,7 @@ export const ESTRUTURAS_BRUTAS: readonly Bruta[] = [
       'Portal fechado; opera apenas o pensamento natural, junto com o cundalini que a protege.',
     estadoNovo:
       'Archote inflamado: trono do raio de Cristo, portal aberto pelo qual a sabedoria de Deus é transmitida diretamente.',
-    grauDeAtivacao: 2,
+    processos: [processo(2)],
     citacoes: [
       {
         texto:
@@ -390,7 +404,7 @@ export const ESTRUTURAS_BRUTAS: readonly Bruta[] = [
       'Luz protetora em torno da glândula pineal, que se apaga como um fusível queimado quando forçada pelo ocultismo.',
     estadoNovo:
       'Os grânulos irradiam uma luz policromática, cuja força cresce continuamente à medida que a pineal se abre.',
-    grauDeAtivacao: 2,
+    processos: [processo(2)],
     citacoes: [
       {
         texto:
@@ -418,7 +432,7 @@ export const ESTRUTURAS_BRUTAS: readonly Bruta[] = [
     estadoDialetico: 'Foco mais importante da faculdade do pensamento na consciência dialética.',
     estadoNovo:
       'Mudado pela atividade do círculo ígneo do cundalini; o pensamento passa a servir à nova voz interior.',
-    grauDeAtivacao: 3,
+    processos: [processo(3)],
     citacoes: [
       {
         texto:
@@ -446,7 +460,7 @@ export const ESTRUTURAS_BRUTAS: readonly Bruta[] = [
     estadoDialetico: 'Foco mais importante da vontade, a serviço da pressão da natureza.',
     estadoNovo:
       'Uma constelação modificada traz ao aluno uma nova vontade, e o abandono da pressão da natureza.',
-    grauDeAtivacao: 3,
+    processos: [processo(3)],
     citacoes: [
       {
         texto:
@@ -476,7 +490,7 @@ export const ESTRUTURAS_BRUTAS: readonly Bruta[] = [
     estadoDialetico: 'Canal do fogo serpentino comum, no qual circula o fogo da consciência dialética.',
     estadoNovo:
       'Extinto de maneira completamente não forçada e natural no caminho da endura; só então o fogo da renovação pode adentrá-lo.',
-    grauDeAtivacao: 7,
+    processos: [{ fase: 'extingue', inicio: 6, fim: 7, descricao: 'A coluna comum diminui até extinguir-se na endura.' }],
     citacoes: [
       {
         texto:
@@ -504,7 +518,7 @@ export const ESTRUTURAS_BRUTAS: readonly Bruta[] = [
       'Sistema por onde circula a força volitiva da consciência biológica, controlando os nervos.',
     estadoNovo:
       'Substituída em função pelo duplo cordão simpático, indicado na sabedoria antiga como a futura segunda medula espinal.',
-    grauDeAtivacao: 5,
+    processos: [processo(5)],
     citacoes: [
       {
         texto:
@@ -532,7 +546,7 @@ export const ESTRUTURAS_BRUTAS: readonly Bruta[] = [
       'Sede da consciência no sistema do fogo serpentino, e é a constante de hidrogênio da natureza comum.',
     estadoNovo:
       'Não é convertida: o novo éter de hidrogênio não pode ser transferido para cá sem causar fermentação, envenenamento e explosão.',
-    grauDeAtivacao: null,
+    processos: [],
     citacoes: [
       {
         texto:
@@ -560,7 +574,7 @@ export const ESTRUTURAS_BRUTAS: readonly Bruta[] = [
       'Governado pelo ser-desejo, junto com o sangue e o fogo da consciência, e dele se origina.',
     estadoNovo:
       'Um novo grupo de hormônios, que reagem unicamente ao novo fluido nervoso, é liberado no sangue.',
-    grauDeAtivacao: 5,
+    processos: [processo(5)],
     citacoes: [
       {
         texto:
@@ -589,7 +603,7 @@ export const ESTRUTURAS_BRUTAS: readonly Bruta[] = [
       'Força criativa e volitiva da consciência biológica, controlando toda a manifestação dialética pelos nervos.',
     estadoNovo:
       'Extinto junto com a coluna comum, no caminho da endura; a manifestação passa ao novo sistema nervoso.',
-    grauDeAtivacao: 7,
+    processos: [{ fase: 'extingue', inicio: 6, fim: 7, descricao: 'O antigo sistema se extingue no caminho da endura.' }],
     citacoes: [
       {
         texto:
@@ -614,7 +628,7 @@ export const ESTRUTURAS_BRUTAS: readonly Bruta[] = [
       'Cordão nervoso à direita da coluna, funcionando de modo automático, fora do controle da vontade.',
     estadoNovo:
       'Campo criador, impulsionador, masculino: por ele a luz divina inflamada no santuário da cabeça aflui até o plexo sacro.',
-    grauDeAtivacao: 5,
+    processos: [processo(5)],
     citacoes: [
       {
         texto:
@@ -643,7 +657,7 @@ export const ESTRUTURAS_BRUTAS: readonly Bruta[] = [
       'Cordão à esquerda da coluna; no ser humano comum da massa sua cor de irradiação é vermelha.',
     estadoNovo:
       'Campo manifestador e reagente: no candidato do quinto degrau irradia um maravilhoso violeta, tal qual nas ametistas.',
-    grauDeAtivacao: 5,
+    processos: [processo(5)],
     citacoes: [
       {
         texto:
@@ -672,7 +686,7 @@ export const ESTRUTURAS_BRUTAS: readonly Bruta[] = [
       'Quase totalmente isolado no que concerne ao fogo serpentino comum.',
     estadoNovo:
       'Câmara terrena onde Pingalá é confrontada com Idá, e de onde sobe a corrente de louvor e gratidão.',
-    grauDeAtivacao: 5,
+    processos: [processo(5)],
     citacoes: [
       {
         texto:
@@ -699,7 +713,7 @@ export const ESTRUTURAS_BRUTAS: readonly Bruta[] = [
     estadoDialetico:
       'Ponto acima do qual concorrem os dois cordões do simpático e a esfera de influência imediata da pineal.',
     estadoNovo: 'Fecho do circuito da nova circulação gnóstica, ponto de encontro no santuário da cabeça.',
-    grauDeAtivacao: 5,
+    processos: [processo(5)],
     citacoes: [
       {
         texto:
@@ -735,7 +749,7 @@ export const ESTRUTURAS_BRUTAS: readonly Bruta[] = [
     estadoDialetico: 'Não existe no estado dialético: o circuito ainda não está fechado.',
     estadoNovo:
       'O trajeto completo da circulação gnóstica, que os antigos sábios chamavam de lira de Deus.',
-    grauDeAtivacao: 5,
+    processos: [processo(5)],
     citacoes: [
       {
         texto:
@@ -763,7 +777,7 @@ export const ESTRUTURAS_BRUTAS: readonly Bruta[] = [
     estadoDialetico: 'Não existe: nada dela pode ser edificado sobre o fogo serpentino comum.',
     estadoNovo:
       'Construída mediante o maravilhoso campo do simpático; sua duodécima porta luz com refulgência de ametista.',
-    grauDeAtivacao: 7,
+    processos: [processo(7)],
     citacoes: [
       {
         texto:
@@ -791,7 +805,7 @@ export const ESTRUTURAS_BRUTAS: readonly Bruta[] = [
       'O órgão supremo de que os homens vivem, e o livro chama a atenção para o nome: em alemão e inglês, fígado é literalmente "o vivente". É por ele que saem do corpo as forças que entram pelo baço. Perde a primazia quando a vida deixa de proceder desta natureza.',
     estadoDialetico: 'O órgão supremo de que os homens vivem, saída do canal das forças etéricas.',
     estadoNovo: 'Perde a primazia: a vida deixa de proceder daqui.',
-    grauDeAtivacao: 5,
+    processos: [processo(5)],
     citacoes: [
       {
         texto: 'O fígado é o órgão supremo de que os homens vivem.',
@@ -818,7 +832,7 @@ export const ESTRUTURAS_BRUTAS: readonly Bruta[] = [
       'Abriga o núcleo do ser-eu, enrolado qual uma espiral na vigília, e é a principal porta de entrada das forças etéricas.',
     estadoNovo:
       'Neutralizado na demolição do eu; a captação etérica passa ao esterno e aos quatro alimentos santos.',
-    grauDeAtivacao: 5,
+    processos: [processo(5)],
     citacoes: [
       {
         texto:
@@ -845,7 +859,7 @@ export const ESTRUTURAS_BRUTAS: readonly Bruta[] = [
       'Parte do domínio do eu sanguíneo. O livro os nomeia sem descrevê-los em separado: junto com o fígado, o baço e as suprarrenais, e com o plexo solar, eles formam o domínio do ser-desejo. Seu destino é o do sistema inteiro.',
     estadoDialetico: 'Parte do domínio do eu sanguíneo, do ser-desejo.',
     estadoNovo: 'Seguem o sistema fígado-baço: perdem o comando junto com o eu sanguíneo.',
-    grauDeAtivacao: 5,
+    processos: [processo(5)],
     citacoes: [
       {
         texto:
@@ -866,7 +880,7 @@ export const ESTRUTURAS_BRUTAS: readonly Bruta[] = [
       'Como os rins, nomeadas pelo livro como parte do domínio do eu sanguíneo, sem descrição própria. Estão aqui porque o livro as inclui na lista, e a honestidade do atlas exige que o que ele nomeia apareça.',
     estadoDialetico: 'Parte do domínio do eu sanguíneo, do ser-desejo.',
     estadoNovo: 'Seguem o sistema fígado-baço: perdem o comando junto com o eu sanguíneo.',
-    grauDeAtivacao: 5,
+    processos: [processo(5)],
     citacoes: [
       {
         texto:
@@ -888,7 +902,7 @@ export const ESTRUTURAS_BRUTAS: readonly Bruta[] = [
     estadoDialetico:
       'Sede da consciência cerebral lunar: uma astúcia extremamente primitiva, ainda hoje ativa em muitas pessoas.',
     estadoNovo: 'Silenciado, quando a flama do quarto degrau arde ininterruptamente.',
-    grauDeAtivacao: 4,
+    processos: [processo(4)],
     citacoes: [
       {
         texto:
@@ -911,7 +925,7 @@ export const ESTRUTURAS_BRUTAS: readonly Bruta[] = [
       'O núcleo interior de nossa existência dialética material, que governa sangue, fluido nervoso e fogo serpentino a partir do sistema fígado-baço.',
     estadoNovo:
       'Não se converte: o eu da natureza não pode tornar-se suscetível à vida superior, e tem de morrer.',
-    grauDeAtivacao: null,
+    processos: [],
     citacoes: [
       {
         texto:
@@ -948,7 +962,7 @@ export const ESTRUTURAS_BRUTAS: readonly Bruta[] = [
       'Raiz do arqui-instinto: a dialética está fundamentalmente enraizada em nosso sangue.',
     estadoNovo:
       'Vivificação do sangue — o primeiro degrau da senda sétupla, denominado virtude na Epístola de Pedro.',
-    grauDeAtivacao: 1,
+    processos: [processo(1)],
     citacoes: [
       {
         texto: 'A dialética está fundamentalmente enraizada em nosso sangue.',
@@ -986,7 +1000,7 @@ export const ESTRUTURAS_BRUTAS: readonly Bruta[] = [
     estadoDialetico: 'A circulação do sangue entre o coração e o pulmão, e de volta.',
     estadoNovo:
       'Corrente de força de luz atraída pela rosa-do-coração, que penetra pelo esterno e liga diretamente coração e cabeça.',
-    grauDeAtivacao: 1,
+    processos: [processo(1)],
     citacoes: [
       {
         texto:
@@ -1014,7 +1028,7 @@ export const ESTRUTURAS_BRUTAS: readonly Bruta[] = [
     estadoDialetico: 'Praticamente inativo após a infância, com a atrofia do timo.',
     estadoNovo:
       'Conduz a força de luz da rosa à pequena circulação sanguínea, como recurso temporário para um novo crescimento espiritual.',
-    grauDeAtivacao: 1,
+    processos: [processo(1)],
     citacoes: [
       {
         texto:
@@ -1037,7 +1051,7 @@ export const ESTRUTURAS_BRUTAS: readonly Bruta[] = [
       'Os quatro alimentos adaptados desta ordem de natureza, que sustentam toda a manifestação dialética.',
     estadoNovo:
       'Continuam necessários: o candidato vive duas vidas, uma que sempre diminui e outra que cresce sempre.',
-    grauDeAtivacao: null,
+    processos: [],
     citacoes: [
       {
         texto:
@@ -1065,7 +1079,7 @@ export const ESTRUTURAS_BRUTAS: readonly Bruta[] = [
     estadoDialetico:
       'Acolhidos pelo sistema do baço, asseguram os impulsos primários e as atividades motoras vitais.',
     estadoNovo: 'Substituídos progressivamente, à medida que o baço é neutralizado.',
-    grauDeAtivacao: 5,
+    processos: [processo(5)],
     citacoes: [
       {
         texto:
@@ -1088,7 +1102,7 @@ export const ESTRUTURAS_BRUTAS: readonly Bruta[] = [
       'Acolhidos pelo esterno, satisfazem o desejo pessoal dirigido individualmente.',
     estadoNovo:
       'O mesmo esterno passa a captar, ao lado deles, as irradiações santificadoras da Gnosis.',
-    grauDeAtivacao: 1,
+    processos: [processo(1)],
     citacoes: [
       {
         texto:
@@ -1111,7 +1125,7 @@ export const ESTRUTURAS_BRUTAS: readonly Bruta[] = [
       'Sustentam pensamento, vontade, memória e imaginação — um grupo completo de quatro, não um éter isolado.',
     estadoNovo:
       'Junto com os éteres mentais da natureza, adentram o sistema os éteres da nova natureza: uma segunda luta força seu caminho.',
-    grauDeAtivacao: 2,
+    processos: [processo(2)],
     citacoes: [
       {
         texto:
@@ -1140,7 +1154,7 @@ export const ESTRUTURAS_BRUTAS: readonly Bruta[] = [
       'O homem adulto come dos doze pães, e o ser aural o guia completamente por esses doze apóstolos.',
     estadoNovo:
       'A fortaleza da aliança duodécupla do Velho Testamento é atacada no centro, no coração.',
-    grauDeAtivacao: 1,
+    processos: [processo(1)],
     citacoes: [
       {
         texto:
@@ -1168,7 +1182,7 @@ export const ESTRUTURAS_BRUTAS: readonly Bruta[] = [
     estadoDialetico: 'Inacessíveis: o sistema comum não pode recebê-los sem se destruir.',
     estadoNovo:
       'Substância etérica quádrupla de natureza completamente diversa, à qual o candidato do quinto degrau é ligado.',
-    grauDeAtivacao: 5,
+    processos: [processo(5)],
     citacoes: [
       {
         texto:
@@ -1212,7 +1226,7 @@ export const ESTRUTURAS_BRUTAS: readonly Bruta[] = [
       'Nutridas pelo criador, emanam de seus olhos uma influência cada vez mais poderosa, hipnotizante.',
     estadoNovo:
       'Cedem lugar à imagem mental do homem celeste imortal, formada no mesmo campo de respiração.',
-    grauDeAtivacao: 0,
+    processos: [processo(0)],
     citacoes: [
       {
         texto:
@@ -1234,14 +1248,17 @@ export const ESTRUTURAS_BRUTAS: readonly Bruta[] = [
     sistema: 'correntes',
     sinonimos: ['luzes', 'estrelas do firmamento microcósmico'],
     posicao: [0, 0, 0],
-    forma: { tipo: 'abstrata' },
+    forma: { tipo: 'firmamento-aural', raio: 1.2, focos: 28 },
     descricao:
       'As luzes do firmamento microcósmico: focos magnéticos que determinam a qualidade do campo espiritual magnético e, com isso, a natureza do que o sistema atrai da atmosfera. A personalidade corresponde à natureza dessas luzes — não o contrário. Os focos do período pré-luciferino estão adormecidos há éons porque não podem arder no fogo ímpio.',
     estadoDialetico:
       'Focos magnéticos que determinam a qualidade do campo magnético e, com isso, a natureza da personalidade.',
     estadoNovo:
       'Os antigos focos do período pré-luciferino podem reacender, e o sol latente e extinto do firmamento se inflama.',
-    grauDeAtivacao: 7,
+    processos: [
+      { fase: 'extingue', inicio: 5, fim: 7, descricao: 'As antigas estrelas perdem a luz.' },
+      { fase: 'cresce', inicio: 5, fim: 7, descricao: 'Novos focos se inflamam no firmamento em formação.' },
+    ],
     citacoes: [
       {
         texto:

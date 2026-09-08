@@ -96,13 +96,18 @@ test('3 · busca por sinônimo encontra a rosa-do-coração', async ({ page }) =
   await expect(detalhe(page).getByRole('heading', { name: 'Rosa-do-coração' })).toBeVisible();
 });
 
-test('4 · avançar passo a passo troca o degrau, a URL e a explicação do card', async ({ page }) => {
+test('4 · estado natural precede a fé, que precede o primeiro degrau', async ({ page }) => {
   soEmTelaLarga(page);
   await abrirExplorador(page);
 
-  // Grau 0 é a chave: o card da direita já explica a fé, sem nada selecionado.
   const cartao = degrau(page);
+  await expect(cartao.getByRole('heading', { name: 'Estado natural' })).toBeVisible();
+  await expect(cartao.getByText(/rosa permanece latente/i)).toBeVisible();
+
+  await page.getByRole('button', { name: 'Próximo degrau' }).click();
+  await expect(page).toHaveURL(/grau=0/);
   await expect(cartao.getByRole('heading', { name: 'Fé' })).toBeVisible();
+  await expect(cartao.getByText(/primeira ruptura/i).first()).toBeVisible();
 
   await page.getByRole('button', { name: 'Próximo degrau' }).click();
   await expect(page).toHaveURL(/grau=1/);
@@ -141,4 +146,15 @@ test('6 · não há mais escolha pelo homem dialético', async ({ page }) => {
   // Parâmetros herdados de links antigos são descartados na primeira escrita.
   await page.getByRole('button', { name: 'Próximo degrau' }).click();
   await expect(page).not.toHaveURL(/modo=|natureza=/);
+});
+
+test('7 · detalhe expõe processos graduais e relações causais direcionadas', async ({ page }) => {
+  await abrirExplorador(page, '?grau=5&foco=personalidade');
+  await expect(detalhe(page).getByText(/uma única pedra já inicia/i)).toBeVisible();
+  await expect(detalhe(page).getByText(/cresce entre o grau 5 e o grau 7/i)).toBeVisible();
+
+  await abrirExplorador(page, '?grau=5&foco=rosa-do-coracao');
+  const fluxos = detalhe(page).getByRole('heading', { name: 'Fluxos e relações' }).locator('..');
+  await expect(fluxos.getByText('irradia sobre')).toBeVisible();
+  await expect(fluxos.getByRole('button', { name: 'Timo' })).toBeVisible();
 });

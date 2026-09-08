@@ -243,8 +243,8 @@ export function Explorador() {
               Senda
             </label>
             <button
-              onClick={() => atualizar({ grau: Math.max(0, estado.grau - 1) as Grau })}
-              disabled={estado.grau === 0}
+              onClick={() => atualizar({ grau: Math.max(-1, estado.grau - 1) as Grau })}
+              disabled={estado.grau === -1}
               aria-label="Degrau anterior"
               className="min-h-9 shrink-0 rounded-md border border-[var(--color-borda)] px-2 text-xs text-[var(--color-texto-2)] disabled:opacity-30"
             >
@@ -253,7 +253,7 @@ export function Explorador() {
             <input
               id="grau"
               type="range"
-              min={0}
+              min={-1}
               max={7}
               step={1}
               value={estado.grau}
@@ -271,7 +271,7 @@ export function Explorador() {
             <button
               onClick={() => {
                 // Apertar no fim recomeça: senão o botão não faria nada.
-                if (!percorrendo && estado.grau >= 7) atualizar({ grau: 0 });
+                if (!percorrendo && estado.grau >= 7) atualizar({ grau: -1 });
                 setPercorrendo((v) => !v);
               }}
               aria-pressed={percorrendo}
@@ -284,7 +284,7 @@ export function Explorador() {
               {percorrendo ? '❚❚' : '▶'}
             </button>
             <span className="w-28 shrink-0 truncate text-xs text-[var(--color-texto-2)]">
-              {estado.grau === 0 ? 'chave' : `grau ${estado.grau}`} · {degrau.nome}
+              {estado.grau < 0 ? 'antes da senda' : estado.grau === 0 ? 'chave · primeira ruptura' : `grau ${estado.grau}`} · {degrau.nome}
             </span>
           </div>
 
@@ -419,7 +419,12 @@ function PainelSistemas({
                   title={`Isolar ${s.nome}`}
                   className="flex min-w-0 items-center gap-1.5 text-left text-xs"
                 >
-                  <span aria-hidden className="size-2 shrink-0 rounded-full" style={{ background: s.cor }} />
+                  <span
+                    aria-hidden
+                    title={`Cor de visualização: ${s.corDeVisualizacao}`}
+                    className="size-2 shrink-0 rounded-full"
+                    style={{ background: s.cor }}
+                  />
                   <span className={ligado ? '' : 'text-[var(--color-texto-3)]'}>{s.nome}</span>
                   <span className="shrink-0 text-[11px] text-[var(--color-texto-3)]">
                     {estruturas.length}

@@ -11,6 +11,8 @@ import type { SistemaId } from '../corpus/tipos';
 export const COR_ROSA = new THREE.Color('#c8901a');
 export const COR_IDA_DIALETICA = new THREE.Color('#9c3535');
 export const COR_IDA_NOVA = new THREE.Color('#6f4b9c');
+export const COR_NOVA_PERSONALIDADE = new THREE.Color('#d09b2c');
+export const COR_NOVO_FIRMAMENTO = new THREE.Color('#3f86a8');
 
 export function corDoSistema(id: SistemaId): THREE.Color {
   return new THREE.Color(SISTEMA_POR_ID.get(id)?.cor ?? '#ffffff');
@@ -91,6 +93,20 @@ export function materialDaFigura(): THREE.MeshPhysicalMaterial {
     sheenColor: new THREE.Color('#f0d3bd'),
     depthWrite: false,
     side: THREE.FrontSide,
+  });
+}
+
+/** Corpo nascente: distinto da pele natural e inicialmente quase invisível. */
+export function materialDaNovaPersonalidade(): THREE.MeshStandardMaterial {
+  return new THREE.MeshStandardMaterial({
+    color: COR_NOVA_PERSONALIDADE,
+    emissive: COR_NOVA_PERSONALIDADE,
+    emissiveIntensity: 0.18,
+    transparent: true,
+    opacity: 0,
+    roughness: 0.35,
+    depthWrite: false,
+    wireframe: true,
   });
 }
 

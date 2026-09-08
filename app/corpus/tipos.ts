@@ -17,7 +17,40 @@ export type SistemaId =
   | 'figado-baco'
   | 'correntes';
 
-export type Grau = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
+/** -1 é o estado natural, anterior à fé; 0 é a fé, chave da senda. */
+export type Grau = -1 | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
+
+export type FaseProcessual = 'inicia' | 'cresce' | 'substitui' | 'extingue' | 'completa';
+
+export interface Processo {
+  fase: FaseProcessual;
+  inicio: Grau;
+  fim: Grau;
+  descricao: string;
+}
+
+export type TipoRelacao =
+  | 'irradia-sobre'
+  | 'transporta'
+  | 'governa'
+  | 'entra-por'
+  | 'sai-por'
+  | 'desce-por'
+  | 'encontra'
+  | 'sobe-por'
+  | 'compoe'
+  | 'alimenta'
+  | 'forma'
+  | 'transforma';
+
+export interface Relacao {
+  origem: string;
+  destino: string;
+  tipo: TipoRelacao;
+  verbo: string;
+  condicao?: string;
+  grau?: Grau;
+}
 
 export type Vec3 = readonly [number, number, number];
 
@@ -33,7 +66,8 @@ export type FormaGeometrica =
    * `parte` é a chave no manifesto; `estilo` decide o material: a pele é o
    * corpo translúcido, `orgao` é víscera difusa, `foco` é glândula densa.
    */
-  | { tipo: 'malha'; parte: string; estilo: 'pele' | 'orgao' | 'foco' }
+  | { tipo: 'malha'; parte: string; estilo: 'pele' | 'personalidade-dupla' | 'orgao' | 'foco' }
+  | { tipo: 'firmamento-aural'; raio: number; focos: number }
   | { tipo: 'abstrata' };
 
 export interface Citacao {
@@ -59,11 +93,11 @@ export interface Estrutura {
   estadoDialetico: string;
   /** O que ela se torna no novo homem. */
   estadoNovo: string;
-  /** Grau em que muda de estado; null = não muda. */
-  grauDeAtivacao: Grau | null;
+  /** Transformações graduais, inclusive substituição e extinção. */
+  processos: readonly Processo[];
   citacoes: readonly Citacao[];
-  /** Derivado de LIGACOES — simétrico por construção. */
-  ligacoes: readonly string[];
+  /** Relações causais em que participa, preservando origem e destino. */
+  relacoes: readonly Relacao[];
   /** Derivado de VERBETES_DE — recíproco por construção. */
   verbetes: readonly string[];
 }
@@ -71,9 +105,9 @@ export interface Estrutura {
 export interface Sistema {
   id: SistemaId;
   nome: string;
-  /** Um dos sete raios do sol divino (I-3, p. 40). */
+  /** Cor editorial de visualização; não atribui um raio divino ao sistema. */
   cor: string;
-  raio: string;
+  corDeVisualizacao: string;
   descricao: string;
   ordem: number;
 }
@@ -96,6 +130,6 @@ export interface DegrauDaSenda {
   /** Frases autorais que ligam o degrau ao que muda no corpo. */
   descricao: string;
   citacoes: readonly Citacao[];
-  /** Derivado de `grauDeAtivacao`: ids que mudam de estado neste grau. */
-  ativa: readonly string[];
+  /** Derivado dos processos: ids cujo processo começa neste estado. */
+  inicia: readonly string[];
 }

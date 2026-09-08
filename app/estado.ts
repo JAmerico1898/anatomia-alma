@@ -5,8 +5,7 @@ import type { Grau, SistemaId } from './corpus/tipos';
  * Todo o estado do explorador vive na URL (§9). Não há persistência, conta nem
  * armazenamento local: um link é o estado inteiro.
  *
- * A cena tem um só eixo de tempo — a senda, de 0 a 7. O grau 0 **é** o estado
- * dialético: ele é o ponto de partida do percurso, não uma alternativa a ele.
+ * A cena vai do estado natural (-1), anterior à fé, até o sétimo degrau.
  */
 
 export interface EstadoUrl {
@@ -21,7 +20,7 @@ const TODOS = SISTEMAS.map((s) => s.id);
 const E_SISTEMA = new Set<string>(TODOS);
 
 export const ESTADO_PADRAO: EstadoUrl = {
-  grau: 0,
+  grau: -1,
   foco: null,
   isolar: false,
   sistemas: TODOS,
@@ -42,7 +41,7 @@ export function lerEstado(p: URLSearchParams): EstadoUrl {
   const foco = p.get('foco');
 
   return {
-    grau: inteiro(p.get('grau'), 0, 7, 0) as Grau,
+    grau: inteiro(p.get('grau'), -1, 7, -1) as Grau,
     foco: foco && ESTRUTURA_POR_ID.has(foco) ? foco : null,
     isolar: p.get('isolar') === '1',
     sistemas: sistemas.length > 0 ? sistemas : TODOS,
@@ -53,7 +52,7 @@ export function lerEstado(p: URLSearchParams): EstadoUrl {
 /** Só o que difere do padrão vai para a URL — links curtos e legíveis. */
 export function escreverEstado(e: EstadoUrl): string {
   const p = new URLSearchParams();
-  if (e.grau !== 0) p.set('grau', String(e.grau));
+  if (e.grau !== -1) p.set('grau', String(e.grau));
   if (e.foco) p.set('foco', e.foco);
   if (e.isolar) p.set('isolar', '1');
   if (e.sistemas.length !== TODOS.length) p.set('sistemas', e.sistemas.join(','));
@@ -66,5 +65,7 @@ export function escreverEstado(e: EstadoUrl): string {
 export function legenda(e: EstadoUrl, nomeDoFoco: string | null, nomeDoGrau: string): string {
   if (e.isolar && nomeDoFoco) return nomeDoFoco.toUpperCase();
   if (e.separar > 0.02) return `ESTRUTURAS SEPARADAS · ${Math.round(e.separar * 100)}%`;
-  return `MICROCOSMO · GRAU ${e.grau} · ${nomeDoGrau.toUpperCase()}`;
+  return e.grau < 0
+    ? `MICROCOSMO · ${nomeDoGrau.toUpperCase()}`
+    : `MICROCOSMO · ${e.grau === 0 ? 'CHAVE' : `GRAU ${e.grau}`} · ${nomeDoGrau.toUpperCase()}`;
 }

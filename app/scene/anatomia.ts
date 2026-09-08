@@ -17,8 +17,9 @@ export const PES_Y = -1.3;
 export const TOPO_Y = 0.5;
 export const ALTURA = TOPO_Y - PES_Y;
 
-/** A pele: a estrutura `personalidade` do corpus é o corpo visível. */
+/** A pele serve de suporte à personalidade natural e à malha nascente distinta. */
 export const ID_DA_PELE = 'personalidade';
+export const PAPEIS_DA_PERSONALIDADE = ['personalidade-antiga', 'personalidade-nova'] as const;
 
 export interface ParteAnatomica {
   id: string;

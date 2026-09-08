@@ -4,6 +4,7 @@ import type { Anatomia } from './anatomia';
 import {
   corDoSistema,
   materialDaFigura,
+  materialDaNovaPersonalidade,
   materialDeCamada,
   materialDeCorrente,
   materialDeFoco,
@@ -60,7 +61,7 @@ export function construirForma(e: Estrutura, anatomia: Anatomia): Construida {
       g.computeBoundingSphere();
 
       const material =
-        f.estilo === 'pele'
+        f.estilo === 'pele' || f.estilo === 'personalidade-dupla'
           ? materialDaFigura()
           : f.estilo === 'orgao'
             ? materialDeOrgao(cor)
@@ -68,8 +69,18 @@ export function construirForma(e: Estrutura, anatomia: Anatomia): Construida {
       const malha = new THREE.Mesh(g, material);
       // A pele envolve tudo: desenhá-la por último evita que ela apague o que
       // há dentro dela quando o depth test decide a ordem sozinho.
-      if (f.estilo === 'pele') malha.renderOrder = 8;
+      if (f.estilo === 'pele' || f.estilo === 'personalidade-dupla') malha.renderOrder = 8;
       else if (f.estilo === 'orgao') malha.renderOrder = 5;
+      if (f.estilo === 'personalidade-dupla') {
+        malha.userData.papel = 'personalidade-antiga';
+        const nova = new THREE.Mesh(g, materialDaNovaPersonalidade());
+        nova.scale.set(0.985, 0.985, 0.985);
+        nova.renderOrder = 9;
+        nova.userData.papel = 'personalidade-nova';
+        const grupo = new THREE.Group();
+        grupo.add(malha, nova);
+        return { objeto: grupo, ancora: v(parte.ancora), alvos: [malha, nova], materiais: [material, nova.material] };
+      }
       return { objeto: malha, ancora: v(parte.ancora), alvos: [malha], materiais: [material] };
     }
 
@@ -142,6 +153,30 @@ export function construirForma(e: Estrutura, anatomia: Anatomia): Construida {
       // Partículas são alvo ruim de clique; a corrente é alcançada pelo painel,
       // pela busca e pelo realce a partir das estruturas a que se liga.
       return { objeto: pontos, ancora: c.getPointAt(0.5), alvos: [], materiais: [material] };
+    }
+
+    case 'firmamento-aural': {
+      const antigas = new THREE.PointsMaterial({ color: '#854f4f', size: 0.025, transparent: true, opacity: 0.75 });
+      const novas = new THREE.PointsMaterial({ color: '#2f789c', size: 0.028, transparent: true, opacity: 0 });
+      const criar = (defasagem: number) => {
+        const pos = new Float32Array(f.focos * 3);
+        for (let i = 0; i < f.focos; i++) {
+          const y = 1 - 2 * ((i + 0.5) / f.focos);
+          const a = i * 2.399963 + defasagem;
+          const xz = Math.sqrt(1 - y * y);
+          pos.set([e.posicao[0] + f.raio * xz * Math.cos(a), e.posicao[1] + f.raio * y, e.posicao[2] + f.raio * xz * Math.sin(a)], i * 3);
+        }
+        const g = new THREE.BufferGeometry();
+        g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+        return g;
+      };
+      const grupo = new THREE.Group();
+      const velhos = new THREE.Points(criar(0), antigas);
+      const novos = new THREE.Points(criar(0.9), novas);
+      velhos.userData.papel = 'firmamento-antigo';
+      novos.userData.papel = 'firmamento-novo';
+      grupo.add(velhos, novos);
+      return { objeto: grupo, ancora: v(e.posicao).add(new THREE.Vector3(f.raio, 0, 0)), alvos: [], materiais: [antigas, novas] };
     }
 
     case 'abstrata': {

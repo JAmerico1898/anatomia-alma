@@ -10,7 +10,7 @@ const erros = [];
 const ok = (cond, msg) => { if (!cond) erros.push(msg); };
 
 const { ESTRUTURAS, ESTRUTURA_POR_ID } = await carregar('app/corpus/corpus.ts');
-const { construirCena, ESTADO_INICIAL, progressoDeAtivacao } = await carregar('app/scene/construir.ts');
+const { construirCena, ESTADO_INICIAL, progressoDoProcesso } = await carregar('app/scene/construir.ts');
 const { decodificarAnatomia, dentroDaFigura, PES_Y, TOPO_Y, ID_DA_PELE } =
   await carregar('app/scene/anatomia.ts');
 const { projetarRotulos } = await carregar('app/scene/rotulos.ts');
@@ -60,12 +60,12 @@ for (const e of ESTRUTURAS) {
     ok(temGeometria, `1: ${e.id} não é abstrata mas não gerou geometria`);
   }
 }
-ok(CONCRETAS.length === 29, `1: ${CONCRETAS.length} estruturas concretas, esperadas 29`);
+ok(CONCRETAS.length === 30, `1: ${CONCRETAS.length} estruturas concretas, esperadas 30`);
 
 // ── 2. Nenhuma estrutura interna flutua fora da figura.
 // Camadas envolvem o corpo por definição; `formas-pensamento` circula por fora
 // dele, no campo de respiração (I-4, p. 48). Ambas ficam de fora da checagem.
-const FORA_POR_DESIGN = new Set(['formas-pensamento']);
+const FORA_POR_DESIGN = new Set(['formas-pensamento', 'focos-aurais']);
 for (const e of CONCRETAS) {
   if (e.forma.tipo === 'camada' || FORA_POR_DESIGN.has(e.id)) continue;
 
@@ -182,30 +182,24 @@ function assinatura(grau) {
   return partes.join('|');
 }
 
-const assinaturas = [0, 1, 2, 3, 4, 5, 6, 7].map(assinatura);
-for (let g = 1; g <= 7; g++) {
-  ok(assinaturas[g] !== assinaturas[g - 1], `6: grau ${g} é idêntico ao grau ${g - 1}`);
+const estados = [-1, 0, 1, 2, 3, 4, 5, 6, 7];
+const assinaturas = estados.map(assinatura);
+for (let i = 1; i < estados.length; i++) {
+  ok(assinaturas[i] !== assinaturas[i - 1], `6: estado ${estados[i]} é idêntico ao anterior`);
 }
 
 // Estabilidade: reaplicar um grau, depois de varrer a senda inteira, tem de
 // reproduzir exatamente o mesmo estado — nenhum material fica preso.
 for (const g of [0, 3, 5, 7]) {
   for (const varredura of [0, 7, 0, 4.5, 2.3, 7]) cena.aplicarEstado({ ...ESTADO_INICIAL, grau: varredura });
-  ok(assinatura(g) === assinaturas[g], `6: grau ${g} não é estável após varrer a senda`);
+  ok(assinatura(g) === assinaturas[estados.indexOf(g)], `6: grau ${g} não é estável após varrer a senda`);
 }
 
-// ── 7. Toda estrutura com grauDeAtivacao muda visivelmente NAQUELE grau, e não antes.
+// ── 7. Todo processo respeita seu intervalo.
 for (const e of ESTRUTURAS) {
-  if (e.grauDeAtivacao === null) {
-    for (const g of [0, 3, 5, 7]) {
-      ok(progressoDeAtivacao(null, g) === 0, `7: ${e.id} não deveria ativar em grau nenhum`);
-    }
-    continue;
-  }
-  const g = e.grauDeAtivacao;
-  ok(progressoDeAtivacao(g, g) === 1, `7: ${e.id} não está plenamente ativa no grau ${g}`);
-  if (g > 1) {
-    ok(progressoDeAtivacao(g, g - 2) === 0, `7: ${e.id} já ativa antes do grau ${g}`);
+  for (const p of e.processos) {
+    ok(progressoDoProcesso(p, p.inicio - 1) === 0, `7: ${e.id}/${p.fase} começa cedo`);
+    ok(progressoDoProcesso(p, p.fim) === 1, `7: ${e.id}/${p.fase} não completa no fim`);
   }
 }
 
@@ -218,6 +212,6 @@ if (erros.length) {
   process.exit(1);
 }
 console.log(
-  `✓ cena: 29 estruturas concretas com geometria, alcançáveis por raycast em 4 vistas · ` +
-    `nenhuma fora da figura · rótulos sem colisão em 4 vistas · 8 graus distintos e estáveis`,
+  `✓ cena: 30 estruturas concretas com geometria, alcançáveis por raycast em 4 vistas · ` +
+    `nenhuma fora da figura · rótulos sem colisão em 4 vistas · 9 estados distintos e estáveis`,
 );

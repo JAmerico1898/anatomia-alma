@@ -45,7 +45,7 @@ alma tem **posições**, e elas são o eixo da navegação.
 | Eixos de estado | Dois **modos independentes**: `senda` (0…7 graus, transformação contínua) e `duas-naturezas` (comparação/ruptura). |
 | Escopo | Microcosmo fechado. 7 sistemas, 42 estruturas. Cosmo entra só como texto e como radiação que atinge a cena. |
 | Direitos | Livre uso do livro (declarado pelo proprietário do projeto). Glossário verbatim permitido. |
-| Geometria | 100% procedural em three.js. Zero assets binários, zero pipeline de conversão. |
+| Geometria | Híbrida: malhas BodyParts3D carregadas por `app/scene/anatomia.ts` de `public/anatomia.bin`, com campos, tubos, correntes e focos gerados em three.js. |
 | Stack | Next.js 16 (App Router) + React 19 + Tailwind 4 + shadcn/ui + three.js → Vercel. |
 | Idioma | pt-BR apenas. Sem infraestrutura de i18n. |
 | Estética | Escuro sideral; paleta dos sete raios como codificação de sistema; cor é informação. |
@@ -77,10 +77,11 @@ processo.
 
 ### 4.1 Os sete sistemas
 
-Ordem de exibição no painel `Sistemas`, com o raio correspondente do sol divino
-(I-3, p. 40) como cor de identidade.
+Ordem de exibição no painel `Sistemas`, com uma cor editorial de visualização.
+As cores não atribuem cada raio do sol divino a um sistema anatômico
+(I-3, p. 40); são apenas identidade visual.
 
-| # | id | Nome | Raio | O que reúne |
+| # | id | Nome | Cor de visualização | O que reúne |
 |---|---|---|---|---|
 | 1 | `camadas` | Camadas do microcosmo | violeta | As quatro esferas concêntricas do sistema de vida (Glossário, p. 373) |
 | 2 | `santuarios` | Os três santuários | índigo | Cabeça, coração, pelve — os três focos da personalidade (II-3, pp. 205–207) |
@@ -241,9 +242,9 @@ export interface Estrutura {
   /** Uma frase. O que ela se torna no novo homem. */
   estadoNovo: string;
   /** Grau em que muda de estado; null = não muda (ver `constante-de-hidrogenio`). */
-  grauDeAtivacao: Grau | null;
+  processos: Processo[];            // fases e intervalos: inicia/cresce/substitui/extingue/completa
   citacoes: Citacao[];              // ≥ 1
-  ligacoes: string[];               // ids de outras Estruturas
+  relacoes: Relacao[];              // origem, destino, tipo, verbo, condição e grau opcionais
   /** Termos do Glossário relacionados (slug do verbete). */
   verbetes: string[];
 }
@@ -251,7 +252,8 @@ export interface Estrutura {
 export interface Sistema {
   id: SistemaId;
   nome: string;
-  cor: string;                      // um dos sete raios
+  cor: string;                      // token editorial de visualização
+  corDeVisualizacao: string;        // nome editorial; não é correspondência doutrinária
   descricao: string;
   ordem: number;
 }
@@ -280,12 +282,12 @@ Invariantes (verificadas por `validate-corpus.mjs`, §11):
 2. Todo `id` é único e kebab-case.
 3. Toda estrutura tem ≥ 1 citação; toda citação tem `pagina` entre 17 e 358
    (corpo do livro) ou entre 363 e 378 (Glossário).
-4. Todo id em `ligacoes` e em `DegrauDaSenda.ativa` existe.
-5. `ligacoes` é simétrica: se A lista B, B lista A.
+4. Toda origem e destino de `Relacao` e todo id em `DegrauDaSenda.inicia` existem.
+5. Cada relação possui direção, tipo e verbo; nenhum reverso é inferido.
 6. Todo slug em `verbetes` existe no Glossário; todo verbete com `estruturas`
    não-vazio é referenciado de volta.
-7. Toda estrutura com `grauDeAtivacao !== null` aparece em `ativa` do degrau
-   correspondente, e só nele.
+7. Todo processo tem fase e intervalo válidos e aparece em `inicia` no estado
+   correspondente ao começo do intervalo.
 8. Nenhum campo textual vazio.
 
 ---
@@ -529,10 +531,10 @@ de separação, nenhuma estrutura sobrepõe outra nos 3 viewports · todo deep l
 de §9 restaura exatamente o estado.
 
 **Fase 4 — Modo senda**
-Slider de 8 paradas, interpolação de materiais, correntes animadas, cartão de grau.
-*Verificar:* cada um dos 8 graus produz um estado distinto e estável · toda
-estrutura com `grauDeAtivacao` visivelmente muda naquele grau e não antes ·
-arrastar rápido de 0 a 7 e voltar não deixa material preso.
+Slider de 9 paradas (estado natural, fé e sete degraus), interpolação de materiais,
+correntes animadas, cartão de estado. *Verificar:* cada estado produz resultado
+distinto e estável · todo processo respeita seu intervalo · arrastar rápido de
+-1 a 7 e voltar não deixa material preso.
 
 **Fase 5 — Modo duas naturezas**
 Apresentação dividida com câmeras sincronizadas; apresentação alternada; troca
@@ -632,15 +634,13 @@ inúmeros grânulos". Para o `par`, `posicao` guarda o ponto médio e `offset` o
 deslocamento, de modo que rótulo e enquadramento de câmera seguem operando com
 um único ponto.
 
-### E2 · `ligacoes` e `verbetes` passam a ser derivadas (§5)
+### E2 · Relações e verbetes derivados (§5; relações revistas por E26)
 
-As arestas são declaradas uma única vez em `app/corpus/relacoes.ts`, como lista
-de pares com a fonte do livro em comentário, e a relação verbete↔estrutura numa
-única tabela. `Estrutura.ligacoes`, `Estrutura.verbetes` e `Verbete.estruturas`
-são derivadas em `corpus.ts`. As invariantes 5 e 6 tornam-se verdadeiras por
-construção em vez de exigirem manutenção duplicada. `DegrauDaSenda.ativa` é
-derivada de `grauDeAtivacao` pelo mesmo motivo, o que também torna a invariante
-7 estrutural.
+As relações são declaradas uma única vez em `app/corpus/relacoes.ts`, e a
+relação verbete↔estrutura numa única tabela. `Estrutura.relacoes`,
+`Estrutura.verbetes` e `Verbete.estruturas` são derivados em `corpus.ts`.
+Desde E26, as relações têm direção e tipo, e `DegrauDaSenda.inicia` deriva do
+início dos intervalos de `Estrutura.processos`.
 
 ### E3 · Invariante 9 — toda citação é conferida contra o livro (§11)
 
@@ -717,8 +717,8 @@ painel `Sistemas`.
 - **Apresentação dividida**: um único `WebGLRenderer` desenhando dois viewports
   por `setScissorTest`, e não duas cenas. Geometria compartilhada, um contexto
   WebGL, e câmeras sincronizadas por serem literalmente a mesma câmera.
-- **`modo` é exclusivo** (`senda` | `duas-naturezas`). `/` abre em
-  `senda&grau=0`, e o grau 0 **é** o estado dialético — um só baseline.
+- **`modo` era exclusivo** (`senda` | `duas-naturezas`). Essa decisão histórica
+  foi substituída por E22 e o baseline natural separado foi introduzido em E26.
 - **`/senda` é montada só do corpus**, sem reproduzir a Parte II.
 - **`livro/` não é versionado.** O texto-fonte fica local; o que sobe é o
   `corpus.ts`, com trechos identificados por capítulo e página.
@@ -906,8 +906,8 @@ a lado ou alternando. Ele foi removido inteiro — modo, apresentação
 (`dividida` | `alternada`), o parâmetro `natureza`, o divisor central com os
 dois rótulos e o duplo viewport por scissor em `cena.tsx`.
 
-O que resta não perde nada do argumento do livro: **o grau 0 já É o estado
-dialético**, e o grau 7, o novo homem. A comparação continua disponível onde
+O que resta não perde nada do argumento do livro: o grau 7 aponta ao novo homem.
+E26 posteriormente separa o estado natural (`-1`) da fé (`0`). A comparação continua disponível onde
 ela é lida com calma — no card de detalhe, que segue mostrando os dois estados
 de cada estrutura lado a lado. O que sai é a escolha de *parar* no homem
 dialético como se fosse um destino.
@@ -951,3 +951,28 @@ do que a recomendação pede: é uma troca deliberada por área de figura, num
 atlas em que o assunto é o que se vê, não os controles. O card da direita ganhou
 teto de altura explícito (`calc(100dvh-11rem)`) e rola por dentro, em vez de
 correr por baixo da dock quando o texto é longo.
+
+### E26 · Fidelidade processual e causal
+
+O eixo da cena passa a ter nove estados: `-1` é o **estado natural**, com o átomo
+primordial latente; `0` é a **fé**, chave e primeira ruptura; `1…7` são os
+degraus. A presença do átomo não é confundida com sua posse consciente.
+
+`grauDeAtivacao` deixa de existir. Cada estrutura declara `processos`, compostos
+por fase (`inicia`, `cresce`, `substitui`, `extingue`, `completa`) e intervalo.
+No quinto degrau, a nova personalidade aparece como uma segunda malha dentro da
+silhueta natural: começa com uma pedra e cresce enquanto a antiga diminui.
+
+As conexões deixam de ser arestas simétricas. `Relacao` preserva `origem`,
+`destino`, `tipo`, verbo e, quando cabível, condição e grau. O detalhe lê esses
+verbos e a cena desenha setas ao selecionar os participantes. Isso inclui a
+cadeia rosa → timo → hormônio → pequena circulação → cabeça, a entrada pelo baço
+e saída pelo fígado, e o circuito cabeça → Pingalá → plexo sacro → Idá → cabeça.
+
+O ser aural não apenas desaparece: focos antigos se apagam e focos azuis novos
+se inflamam gradualmente, formando um firmamento distinto ligado ao santuário
+da cabeça, à nova consciência e à personalidade nascente (III-11 pp. 355–356).
+
+O espectro sétuplo permanece como doutrina textual do capítulo I-3, mas a paleta
+dos sistemas é editorial. `Sistema` não possui mais `raio`; possui
+`corDeVisualizacao`.

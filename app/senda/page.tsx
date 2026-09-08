@@ -46,13 +46,13 @@ export default function Senda() {
 
             <div className="mt-6">
               <p className="rotulo text-[var(--color-texto-3)]">
-                {d.ativa.length === 0
-                  ? 'Nenhuma estrutura muda de estado neste grau'
-                  : `${d.ativa.length} estrutura${d.ativa.length > 1 ? 's mudam' : ' muda'} de estado aqui`}
+                {d.inicia.length === 0
+                  ? 'Nenhum processo começa neste estado'
+                  : `${d.inicia.length} processo${d.inicia.length > 1 ? 's começam' : ' começa'} aqui`}
               </p>
-              {d.ativa.length > 0 ? (
+              {d.inicia.length > 0 ? (
                 <ul className="mt-3 flex flex-wrap gap-2">
-                  {d.ativa.map((id) => {
+                  {d.inicia.map((id) => {
                     const e = ESTRUTURA_POR_ID.get(id);
                     if (!e) return null;
                     const cor = SISTEMA_POR_ID.get(e.sistema)?.cor;

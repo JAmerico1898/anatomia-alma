@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { ESTRUTURAS, ESTRUTURA_POR_ID, SISTEMAS } from '../corpus/corpus';
-import type { Grau, SistemaId } from '../corpus/tipos';
+import { ESTRUTURAS, ESTRUTURA_POR_ID, RELACOES, SISTEMAS } from '../corpus/corpus';
+import type { Processo, SistemaId } from '../corpus/tipos';
 import type { Anatomia } from './anatomia';
 import { avancarCorrente, construirForma } from './geometrias';
 import { COR_IDA_DIALETICA, COR_IDA_NOVA, COR_ROSA, corDoSistema } from './materiais';
@@ -27,7 +27,7 @@ export interface EstadoCena {
 }
 
 export const ESTADO_INICIAL: EstadoCena = {
-  grau: 0,
+  grau: -1,
   sistemasVisiveis: new Set(SISTEMAS.map((s) => s.id)),
   separar: 0,
   foco: null,
@@ -77,10 +77,11 @@ const DIRECAO_SEPARACAO: Record<SistemaId, THREE.Vector3> = {
 };
 
 /** Progresso de ativação de uma estrutura no grau corrente. */
-export function progressoDeAtivacao(grauDeAtivacao: Grau | null, grau: number): number {
-  if (grauDeAtivacao === null) return 0;
-  if (grauDeAtivacao === 0) return 1;
-  return Math.min(1, Math.max(0, grau - (grauDeAtivacao - 1)));
+export function progressoDoProcesso(processo: Processo, grau: number): number {
+  if (processo.fim === processo.inicio) {
+    return Math.min(1, Math.max(0, grau - (processo.inicio - 1)));
+  }
+  return Math.min(1, Math.max(0, (grau - processo.inicio) / (processo.fim - processo.inicio)));
 }
 
 /**
@@ -88,11 +89,11 @@ export function progressoDeAtivacao(grauDeAtivacao: Grau | null, grau: number): 
  * "entre os graus 6 e 7"; é essa rampa que dá ao grau 6 um estado distinto sem
  * inventar nenhuma ativação que o livro não afirme (emenda E7).
  */
-export function progressoDeExtincao(grau: number): number {
-  return Math.min(1, Math.max(0, grau - 6));
+export function progressoDaEstrutura(processos: readonly Processo[], grau: number): number {
+  return processos
+    .filter((p) => p.fase !== 'extingue')
+    .reduce((maior, p) => Math.max(maior, progressoDoProcesso(p, grau)), 0);
 }
-
-const EXTINGUEM = new Set(['coluna-vertebral', 'medula-espinal', 'fogo-da-consciencia']);
 
 export function construirCena(anatomia: Anatomia): CenaConstruida {
   const raiz = new THREE.Group();
@@ -102,6 +103,9 @@ export function construirCena(anatomia: Anatomia): CenaConstruida {
   const alvos: THREE.Object3D[] = [];
   const donoDoObjeto = new Map<THREE.Object3D, string>();
   const correntes: THREE.Points[] = [];
+  const setas = new THREE.Group();
+  setas.name = 'relacoes-causais';
+  raiz.add(setas);
 
   for (const e of ESTRUTURAS) {
     const { objeto, ancora, alvos: a, materiais } = construirForma(e, anatomia);
@@ -158,14 +162,13 @@ export function construirCena(anatomia: Anatomia): CenaConstruida {
     if (!foco) return new Set();
     const e = ESTRUTURA_POR_ID.get(foco);
     if (!e) return new Set();
-    if (e.forma.tipo === 'abstrata') return new Set([foco, ...e.ligacoes]);
+    const vizinhas = e.relacoes.flatMap((r) => [r.origem, r.destino]);
+    if (e.forma.tipo === 'abstrata') return new Set([foco, ...vizinhas]);
     return new Set([foco]);
   }
 
   function aplicarEstado(estado: EstadoCena): void {
     const realcadas = conjuntoRealcado(estado.foco);
-    const extincao = progressoDeExtincao(estado.grau);
-
     let indiceDeCamada = 0;
     for (const e of ESTRUTURAS) {
       const no = nos.get(e.id)!;
@@ -178,7 +181,10 @@ export function construirCena(anatomia: Anatomia): CenaConstruida {
       if (!visivel) continue;
 
       // Estado dialético → novo, derivado do grau corrente da senda.
-      const t = progressoDeAtivacao(e.grauDeAtivacao, estado.grau);
+      const t = progressoDaEstrutura(e.processos, estado.grau);
+      const extincao = e.processos
+        .filter((p) => p.fase === 'extingue')
+        .reduce((maior, p) => Math.max(maior, progressoDoProcesso(p, estado.grau)), 0);
 
       // Separação de camadas.
       if (e.forma.tipo === 'camada') {
@@ -212,7 +218,7 @@ export function construirCena(anatomia: Anatomia): CenaConstruida {
           } else {
             std.emissive.copy(no.corBase);
           }
-          if (EXTINGUEM.has(e.id)) {
+          if (extincao > 0) {
             std.opacity *= 1 - extincao * 0.94;
             std.emissiveIntensity *= 1 - extincao;
           }
@@ -238,8 +244,47 @@ export function construirCena(anatomia: Anatomia): CenaConstruida {
           fisico.opacity = 0.38 + realce * 0.14;
         }
       }
+
+      if (e.id === 'personalidade') {
+        const inicio = e.processos.filter((p) => p.fase === 'inicia').reduce((v, p) => Math.max(v, progressoDoProcesso(p, estado.grau)), 0);
+        const crescimento = e.processos.filter((p) => p.fase === 'cresce').reduce((v, p) => Math.max(v, progressoDoProcesso(p, estado.grau)), 0);
+        no.objeto.traverse((o) => {
+          const mesh = o as THREE.Mesh;
+          const material = mesh.material as THREE.Material | undefined;
+          if (!material) return;
+          if (o.userData.papel === 'personalidade-antiga') (material as THREE.MeshPhysicalMaterial).opacity = 0.42 * (1 - crescimento * 0.42);
+          if (o.userData.papel === 'personalidade-nova') (material as THREE.MeshStandardMaterial).opacity = inicio * 0.04 + crescimento * 0.48;
+        });
+      }
+      if (e.id === 'focos-aurais') {
+        no.objeto.traverse((o) => {
+          const material = (o as THREE.Points).material as THREE.PointsMaterial | undefined;
+          if (!material) return;
+          if (o.userData.papel === 'firmamento-antigo') material.opacity = 0.75 * (1 - extincao * 0.88);
+          if (o.userData.papel === 'firmamento-novo') material.opacity = t * 0.9;
+        });
+      }
     }
 
+    // As setas são reconstruídas depois da separação, já entre as âncoras atuais.
+    setas.traverse((o) => {
+      const m = o as THREE.Mesh;
+      m.geometry?.dispose();
+      const material = m.material as THREE.Material | undefined;
+      material?.dispose();
+    });
+    setas.clear();
+    for (const r of RELACOES) {
+      if (r.grau !== undefined && estado.grau < r.grau) continue;
+      const a = nos.get(r.origem)?.ancora;
+      const b = nos.get(r.destino)?.ancora;
+      if (!a || !b || a.distanceTo(b) < 0.015) continue;
+      const direcao = b.clone().sub(a);
+      const seta = new THREE.ArrowHelper(direcao.clone().normalize(), a, direcao.length(), 0x6f6251, 0.025, 0.014);
+      seta.userData.relacao = r;
+      seta.visible = estado.foco === r.origem || estado.foco === r.destino;
+      setas.add(seta);
+    }
     atualizarMatrizes();
   }
 

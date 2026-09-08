@@ -3,9 +3,8 @@ import type { Citacao, Grau } from './tipos';
 /**
  * A senda sétupla na ordem da Segunda Epístola de Pedro, tal como o livro a lê.
  *
- * A fé NÃO é um degrau: é a chave, a posse consciente do átomo primordial
- * (II-1 p. 191; II-2 p. 195). Ela entra como grau 0 — o estado dialético com a
- * rosa desperta, que é também o estado base da cena.
+ * O estado natural (-1) precede a fé. A fé (0) não é degrau: é a chave, a
+ * posse e experiência do átomo primordial, já uma primeira ruptura.
  */
 export interface DegrauBruto {
   grau: Grau;
@@ -17,9 +16,21 @@ export interface DegrauBruto {
 
 export const DEGRAUS_BRUTOS: readonly DegrauBruto[] = [
   {
+    grau: -1,
+    nome: 'Estado natural',
+    mudancaCorporal: 'A rosa permanece latente; a personalidade natural governa.',
+    descricao:
+      'Este é o homem comum antes da fé. O átomo-centelha-do-espírito está presente, mas enclausurado e latente: ainda não há posse consciente nem reação positiva a ele. A fé começa somente quando essa latência é rompida.',
+    citacoes: [{
+      texto: 'esse átomo mantinha-se em estado latente e de tal modo enclausurado que não podia ser despertado pela luz do sol divino.',
+      capitulo: 'I-3',
+      pagina: 40,
+    }],
+  },
+  {
     grau: 0,
     nome: 'Fé',
-    mudancaCorporal: 'A rosa é despertada; o eu ainda governa.',
+    mudancaCorporal: 'Primeira ruptura: a rosa vibra e a reação positiva torna-se fé.',
     descricao:
       'A fé não é um degrau da senda, mas a chave que os abre. O livro a define contra o uso corrente da palavra: não é aceitar uma doutrina, uma igreja ou um deus, e sim uma posse de que se tem de estar consciente, no santuário do coração. Enquanto o átomo primordial não estiver desperto, tudo o mais é falatório dialético.',
     citacoes: [

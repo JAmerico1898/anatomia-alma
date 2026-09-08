@@ -18,6 +18,7 @@ export function CartaoDoDegrau({
   degrau: DegrauDaSenda;
   onIrPara: (id: string) => void;
 }) {
+  const natural = degrau.grau === -1;
   const chave = degrau.grau === 0;
 
   return (
@@ -27,7 +28,7 @@ export function CartaoDoDegrau({
     >
       <header className="border-b border-[var(--color-borda)] px-4 py-3">
         <span className="rotulo text-[var(--color-rosa)]">
-          {chave ? 'A chave' : `Grau ${degrau.grau} de 7`}
+          {natural ? 'Antes da senda' : chave ? 'A chave · primeira ruptura' : `Grau ${degrau.grau} de 7`}
         </span>
         <h2 className="mt-1 text-lg font-semibold leading-tight">{degrau.nome}</h2>
         <p className="mt-1 text-xs leading-relaxed text-[var(--color-texto-2)]">
@@ -54,13 +55,13 @@ export function CartaoDoDegrau({
           </div>
         </section>
 
-        {degrau.ativa.length > 0 ? (
+        {degrau.inicia.length > 0 ? (
           <section className="mt-4 pb-1">
             <h3 className="rotulo text-[var(--color-texto-3)]">
-              {chave ? 'Já acesas' : 'Muda neste grau'}
+              {chave ? 'Processos que se iniciam' : 'Começa neste estado'}
             </h3>
             <ul className="mt-2 flex flex-wrap gap-1.5">
-              {degrau.ativa.map((id) => {
+              {degrau.inicia.map((id) => {
                 const e = ESTRUTURA_POR_ID.get(id);
                 if (!e) return null;
                 return (

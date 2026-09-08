@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import {
   ESTRUTURA_POR_ID,
-  SENDA,
   SISTEMA_POR_ID,
   VERBETE_POR_SLUG,
 } from './corpus/corpus';
@@ -28,7 +27,6 @@ export function Detalhe({
   const e = ESTRUTURA_POR_ID.get(id);
   if (!e) return null;
   const sistema = SISTEMA_POR_ID.get(e.sistema);
-  const degrau = SENDA.find((d) => d.grau === e.grauDeAtivacao);
 
   return (
     <aside
@@ -72,24 +70,25 @@ export function Detalhe({
           </div>
         </div>
 
-        <p className="mt-3 text-xs text-[var(--color-texto-2)]">
-          {e.grauDeAtivacao === null ? (
+        <div className="mt-3 text-xs text-[var(--color-texto-2)]">
+          {e.processos.length === 0 ? (
             <span className="text-[var(--color-texto-3)]">
-              Não muda de estado em grau nenhum da senda.
+              Não tem transformação corporal atribuída a um estado da senda.
             </span>
           ) : (
-            <>
-              Muda no{' '}
-              <Link
-                href={`/senda#grau-${e.grauDeAtivacao}`}
-                className="text-[var(--color-rosa)] underline underline-offset-2"
-              >
-                grau {e.grauDeAtivacao} · {degrau?.nome}
-              </Link>
-              .
-            </>
+            <ul className="space-y-1">
+              {e.processos.map((p, i) => (
+                <li key={`${p.fase}-${i}`}>
+                  <span className="font-medium capitalize">{p.fase}</span> entre{' '}
+                  <Link href={`/senda#grau-${p.inicio}`} className="text-[var(--color-rosa)] underline underline-offset-2">
+                    {p.inicio === 0 ? 'a fé' : `o grau ${p.inicio}`}
+                  </Link>
+                  {p.fim !== p.inicio ? ` e o grau ${p.fim}` : ''}: {p.descricao}
+                </li>
+              ))}
+            </ul>
           )}
-        </p>
+        </div>
 
         <section className="mt-4">
           <h3 className="rotulo text-[var(--color-texto-3)]">No livro</h3>
@@ -107,15 +106,18 @@ export function Detalhe({
           </div>
         </section>
 
-        {e.ligacoes.length > 0 ? (
+        {e.relacoes.length > 0 ? (
           <section className="mt-4">
-            <h3 className="rotulo text-[var(--color-texto-3)]">Liga-se a</h3>
-            <ul className="mt-2 flex flex-wrap gap-1.5">
-              {e.ligacoes.map((outro) => {
+            <h3 className="rotulo text-[var(--color-texto-3)]">Fluxos e relações</h3>
+            <ul className="mt-2 space-y-1.5">
+              {e.relacoes.map((relacao, i) => {
+                const sai = relacao.origem === e.id;
+                const outro = sai ? relacao.destino : relacao.origem;
                 const o = ESTRUTURA_POR_ID.get(outro);
                 if (!o) return null;
                 return (
-                  <li key={outro}>
+                  <li key={`${relacao.origem}-${relacao.destino}-${i}`} className="flex items-center gap-1 text-xs">
+                    <span className="text-[var(--color-texto-3)]">{sai ? relacao.verbo : `recebe de`}</span>
                     <button
                       onClick={() => onIrPara(outro)}
                       className="flex items-center gap-1.5 rounded-full border border-[var(--color-borda)] px-2.5 py-0.5 text-xs text-[var(--color-texto-2)] transition-colors hover:border-[var(--color-rosa)] hover:text-[var(--color-texto)]"
@@ -127,6 +129,7 @@ export function Detalhe({
                       />
                       {o.nome}
                     </button>
+                    {relacao.condicao ? <span className="text-[var(--color-texto-3)]">quando {relacao.condicao}</span> : null}
                   </li>
                 );
               })}
