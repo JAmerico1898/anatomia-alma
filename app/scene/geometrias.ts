@@ -172,17 +172,27 @@ export function construirForma(e: Estrutura, anatomia: Anatomia): Construida {
 
     case 'firmamento-aural': {
       const antigas = materialDeEstrelasAurais(new THREE.Color('#7d4242'), 0.05);
-      const novas = materialDeEstrelasAurais(new THREE.Color('#2f789c'), 0.056);
+      // "Um novo céu e uma nova terra": as luzes que se inflamam no mesmo
+      // firmamento são o sol latente e extinto que reacende — douradas, e mais
+      // largas que as antigas, porque o novo céu se impõe ao velho.
+      const novas = materialDeEstrelasAurais(new THREE.Color('#f2c14e'), 0.066);
       const criar = (defasagem: number) => {
         const pos = new Float32Array(f.focos * 3);
+        // Ordem em que cada luz se inflama, espalhada pela esfera em vez de
+        // seguir a espiral: o novo firmamento acende disperso, e não de cima
+        // para baixo.
+        const ordem = new Float32Array(f.focos);
         for (let i = 0; i < f.focos; i++) {
           const y = 1 - 2 * ((i + 0.5) / f.focos);
           const a = i * 2.399963 + defasagem;
           const xz = Math.sqrt(1 - y * y);
           pos.set([e.posicao[0] + f.raio * xz * Math.cos(a), e.posicao[1] + f.raio * y, e.posicao[2] + f.raio * xz * Math.sin(a)], i * 3);
+          const h = Math.sin((i + 1) * 12.9898 + defasagem) * 43758.5453;
+          ordem[i] = h - Math.floor(h);
         }
         const g = new THREE.BufferGeometry();
         g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+        g.setAttribute('ordem', new THREE.BufferAttribute(ordem, 1));
         return g;
       };
       const grupo = new THREE.Group();

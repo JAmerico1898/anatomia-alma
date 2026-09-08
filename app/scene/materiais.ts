@@ -168,6 +168,15 @@ export function materialDeEstrelasAurais(cor: THREE.Color, tamanho: number): THR
       uCor: { value: cor.clone() },
       uOpacidade: { value: 0 },
       uTamanho: { value: tamanho },
+      /** Quanto o núcleo da estrela arde acima da própria cor (0 = apagado). */
+      uBrilho: { value: 0 },
+      /**
+       * Fração das estrelas já inflamadas. O novo firmamento se forma
+       * "paulatinamente" (III-11, p.356): o que cresce grau a grau é o número
+       * de luzes acesas, não o brilho de cada uma — a que acende já arde
+       * inteira.
+       */
+      uAcesas: { value: 1 },
       /** Base do eixo vertical do corpo, em mundo. */
       uEixo: { value: new THREE.Vector3() },
       /** Meia-largura do corpo e faixa de altura que ele ocupa. */
@@ -181,8 +190,12 @@ export function materialDeEstrelasAurais(cor: THREE.Color, tamanho: number): THR
       uniform float uMeiaLargura;
       uniform float uAlturaMin;
       uniform float uAlturaMax;
+      uniform float uAcesas;
+      attribute float ordem;
       varying float vLivre;
+      varying float vAcesa;
       void main() {
+        vAcesa = step(ordem, uAcesas);
         vec4 mundo = modelMatrix * vec4(position, 1.0);
 
         // Direção horizontal da câmera e a perpendicular a ela: é sobre esta
@@ -205,14 +218,21 @@ export function materialDeEstrelasAurais(cor: THREE.Color, tamanho: number): THR
     fragmentShader: /* glsl */ `
       uniform vec3 uCor;
       uniform float uOpacidade;
+      uniform float uBrilho;
       varying float vLivre;
+      varying float vAcesa;
       void main() {
+        if (vAcesa < 0.5) discard;
         // Ponto redondo: o quadrado padrão do GL vira grade visível quando o
         // firmamento adensa.
         float d = length(gl_PointCoord - vec2(0.5));
         if (d > 0.5) discard;
         float a = uOpacidade * vLivre * (1.0 - smoothstep(0.34, 0.5, d));
-        gl_FragColor = vec4(uCor * a, a);
+        // O sol latente que se inflama não muda só de matiz: acende. O núcleo
+        // arde acima da própria cor, e é isso que faz a estrela nova ler como
+        // luz, e não como um ponto pintado de dourado.
+        float nucleo = 1.0 - smoothstep(0.0, 0.3, d);
+        gl_FragColor = vec4(uCor * a * (1.0 + uBrilho * nucleo * 1.9), a);
       }
     `,
   });

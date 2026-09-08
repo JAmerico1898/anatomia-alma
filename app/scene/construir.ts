@@ -316,7 +316,13 @@ export function construirCena(anatomia: Anatomia): CenaConstruida {
             material.uniforms.uOpacidade.value = 0.72 * (1 - apagamento * 0.9) * (1 + realce * 0.3);
           }
           if (o.userData.papel === 'firmamento-novo') {
-            material.uniforms.uOpacidade.value = renovacao * 0.86 * (1 + realce * 0.3);
+            // O novo céu não surge pálido e depois esquenta: a luz que se
+            // inflama já arde dourada e inteira desde o grau em que surge. O
+            // que a renovação faz crescer é quantas delas ardem (uAcesas), e
+            // não o brilho de cada uma.
+            material.uniforms.uOpacidade.value = renovacao > 0 ? 0.96 * (1 + realce * 0.3) : 0;
+            material.uniforms.uBrilho!.value = renovacao > 0 ? 1 : 0;
+            material.uniforms.uAcesas!.value = renovacao;
           }
         });
       }
