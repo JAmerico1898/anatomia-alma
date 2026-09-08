@@ -12,6 +12,10 @@ export const metadata: Metadata = {
 export default function Pagina() {
   return (
     <>
+      {/* A cena não pode desenhar nada antes da anatomia: começar o download
+          junto com o HTML poupa o round-trip que a hidratação custaria. */}
+      <link rel="preload" href="/anatomia.json" as="fetch" crossOrigin="anonymous" />
+      <link rel="preload" href="/anatomia.bin" as="fetch" crossOrigin="anonymous" />
       <Suspense fallback={<Carregando />}>
         <Explorador />
       </Suspense>

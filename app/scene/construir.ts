@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { ESTRUTURAS, ESTRUTURA_POR_ID, SISTEMAS } from '../corpus/corpus';
 import type { Grau, SistemaId } from '../corpus/tipos';
+import type { Anatomia } from './anatomia';
 import { avancarCorrente, construirForma } from './geometrias';
 import { COR_IDA_DIALETICA, COR_IDA_NOVA, COR_ROSA, corDoSistema } from './materiais';
 
@@ -15,18 +16,14 @@ import { COR_IDA_DIALETICA, COR_IDA_NOVA, COR_ROSA, corDoSistema } from './mater
  * `validate-scene.mjs` medir a cena real dentro do Node.
  */
 
-export type Natureza = 'dialetico' | 'novo';
-
 export interface EstadoCena {
   /** 0…7, contínuo enquanto o slider é arrastado. */
   grau: number;
   sistemasVisiveis: ReadonlySet<SistemaId>;
-  /** 0…1. Afasta as cascas radialmente e separa os grupos de órgãos. */
+  /** 0…1. Afasta as camadas radialmente e separa os grupos de órgãos. */
   separar: number;
   foco: string | null;
   isolar: boolean;
-  /** Em `duas-naturezas`, força o estado em vez de derivá-lo do grau. */
-  natureza: Natureza | null;
 }
 
 export const ESTADO_INICIAL: EstadoCena = {
@@ -35,7 +32,6 @@ export const ESTADO_INICIAL: EstadoCena = {
   separar: 0,
   foco: null,
   isolar: false,
-  natureza: null,
 };
 
 interface NoDeEstrutura {
@@ -50,6 +46,9 @@ interface NoDeEstrutura {
   ancoraRepouso: THREE.Vector3;
   /** Âncora corrente, já com a separação aplicada. Rótulos e câmera usam esta. */
   ancora: THREE.Vector3;
+  /** Meia-diagonal da caixa da geometria: é o que o enquadramento de `isolar`
+   * precisa saber para não deixar um fígado do tamanho de uma pineal. */
+  raio: number;
   /** Emissiva base, para não acumular ao reaplicar o estado. */
   corBase: THREE.Color;
 }
@@ -68,7 +67,7 @@ export interface CenaConstruida {
 
 /** Direção em que cada sistema se afasta quando as camadas são separadas. */
 const DIRECAO_SEPARACAO: Record<SistemaId, THREE.Vector3> = {
-  cascas: new THREE.Vector3(0, 0, 0),
+  camadas: new THREE.Vector3(0, 0, 0),
   santuarios: new THREE.Vector3(0, 0, 1),
   focos: new THREE.Vector3(0.9, 0, 0.5),
   'fogo-i': new THREE.Vector3(0, 0, -1),
@@ -95,7 +94,7 @@ export function progressoDeExtincao(grau: number): number {
 
 const EXTINGUEM = new Set(['coluna-vertebral', 'medula-espinal', 'fogo-da-consciencia']);
 
-export function construirCena(): CenaConstruida {
+export function construirCena(anatomia: Anatomia): CenaConstruida {
   const raiz = new THREE.Group();
   raiz.name = 'microcosmo';
 
@@ -105,20 +104,30 @@ export function construirCena(): CenaConstruida {
   const correntes: THREE.Points[] = [];
 
   for (const e of ESTRUTURAS) {
-    const { objeto, ancora, alvos: a, materiais } = construirForma(e);
+    const { objeto, ancora, alvos: a, materiais } = construirForma(e, anatomia);
     objeto.name = e.id;
     raiz.add(objeto);
 
     if ((objeto as THREE.Points).isPoints) correntes.push(objeto as THREE.Points);
+
+    for (const m of materiais) {
+      const std = m as THREE.MeshStandardMaterial;
+      if (std.isMeshStandardMaterial) std.userData.opacidadeBase = std.opacity;
+    }
 
     for (const alvo of a) {
       alvos.push(alvo);
       donoDoObjeto.set(alvo, e.id);
     }
 
+    objeto.updateMatrixWorld(true);
+    const caixa = new THREE.Box3().setFromObject(objeto);
+    const raio = caixa.isEmpty() ? 0.05 : caixa.getSize(new THREE.Vector3()).length() / 2;
+
     nos.set(e.id, {
       id: e.id,
       sistema: e.sistema,
+      raio,
       objeto,
       alvos: a,
       materiais,
@@ -157,7 +166,7 @@ export function construirCena(): CenaConstruida {
     const realcadas = conjuntoRealcado(estado.foco);
     const extincao = progressoDeExtincao(estado.grau);
 
-    let indiceDeCasca = 0;
+    let indiceDeCamada = 0;
     for (const e of ESTRUTURAS) {
       const no = nos.get(e.id)!;
 
@@ -168,18 +177,13 @@ export function construirCena(): CenaConstruida {
       no.objeto.visible = visivel;
       if (!visivel) continue;
 
-      // Estado dialético → novo.
-      const t =
-        estado.natureza === null
-          ? progressoDeAtivacao(e.grauDeAtivacao, estado.grau)
-          : estado.natureza === 'novo' && e.grauDeAtivacao !== null
-            ? 1
-            : 0;
+      // Estado dialético → novo, derivado do grau corrente da senda.
+      const t = progressoDeAtivacao(e.grauDeAtivacao, estado.grau);
 
       // Separação de camadas.
-      if (e.forma.tipo === 'casca') {
-        const escala = 1 + estado.separar * (0.25 + indiceDeCasca * 0.22);
-        indiceDeCasca++;
+      if (e.forma.tipo === 'camada') {
+        const escala = 1 + estado.separar * (0.25 + indiceDeCamada * 0.22);
+        indiceDeCamada++;
         no.objeto.scale.setScalar(escala);
         no.ancora.copy(no.ancoraRepouso).multiplyScalar(escala);
       } else {
@@ -195,7 +199,11 @@ export function construirCena(): CenaConstruida {
       for (const m of no.materiais) {
         const std = m as THREE.MeshStandardMaterial;
         if (std.isMeshStandardMaterial) {
-          std.emissiveIntensity = 0.18 + t * 0.95 + realce * 0.9;
+          // Faixa curta: sobre papel claro, emissivo alto satura para o branco
+          // e a estrutura perde o matiz que a identifica. A ativação também
+          // adensa o sólido, e é isso que se lê como "acendeu".
+          std.emissiveIntensity = 0.05 + t * 0.4 + realce * 0.32;
+          std.opacity = (std.userData.opacidadeBase as number) * (1 + t * 0.35 + realce * 0.25);
           if (e.id === 'cordao-ida') {
             // II-5, p. 224: vermelha no homem comum, violeta-ametista no
             // candidato do quinto degrau.
@@ -205,17 +213,18 @@ export function construirCena(): CenaConstruida {
             std.emissive.copy(no.corBase);
           }
           if (EXTINGUEM.has(e.id)) {
-            std.opacity = 0.9 * (1 - extincao * 0.94);
+            std.opacity *= 1 - extincao * 0.94;
             std.emissiveIntensity *= 1 - extincao;
           }
+          std.opacity = Math.min(1, std.opacity);
         }
 
-        const casca = m as THREE.ShaderMaterial;
-        if (casca.isShaderMaterial && casca.uniforms.uIntensidade) {
-          let intensidade = 0.45 + t * 0.5 + realce * 0.8;
+        const camada = m as THREE.ShaderMaterial;
+        if (camada.isShaderMaterial && camada.uniforms.uIntensidade) {
+          let intensidade = 0.34 + t * 0.42 + realce * 0.6;
           // I-17 p. 169: o ser aural é demolido na medida em que o eu se demole.
           if (e.id === 'ser-aural') intensidade *= 1 - 0.75 * Math.min(1, Math.max(0, (estado.grau - 5) / 2));
-          casca.uniforms.uIntensidade.value = intensidade;
+          camada.uniforms.uIntensidade.value = intensidade;
         }
 
         const pontos = m as THREE.PointsMaterial;
@@ -226,7 +235,7 @@ export function construirCena(): CenaConstruida {
 
         const fisico = m as THREE.MeshPhysicalMaterial;
         if (fisico.isMeshPhysicalMaterial) {
-          fisico.opacity = 0.16 + realce * 0.1;
+          fisico.opacity = 0.38 + realce * 0.14;
         }
       }
     }

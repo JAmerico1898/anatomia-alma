@@ -63,8 +63,17 @@ export default function Fontes() {
           </p>
           <p>
             A origem das coordenadas é a rosa-do-coração, porque o Glossário (p. 376) define que ela
-            coincide com o centro matemático do microcosmo. As cascas concêntricas são, por isso,
-            centradas na rosa e não no centro do corpo.
+            coincide com o centro matemático do microcosmo. Doze estruturas, porém, não são
+            posicionadas por interpretação nenhuma: pele, esterno, timo, pineal, hemisférios,
+            medula oblonga, coluna vertebral, fígado, baço, rins e suprarrenais estão exatamente
+            onde a anatomia de referência os põe, e a verificação do projeto reprova qualquer
+            divergência entre a posição declarada no corpus e o centro medido da malha.
+          </p>
+          <p>
+            As camadas do microcosmo envolvem o corpo inteiro e são, por isso, centradas no centro
+            geométrico da figura — não na rosa, que está à altura do peito. Uma esfera centrada na
+            rosa teria de ser grande demais para conter os pés, e o microcosmo acabaria maior que o
+            homem que ele é.
           </p>
         </Secao>
 
@@ -88,10 +97,28 @@ export default function Fontes() {
           </p>
         </Secao>
 
-        <Secao titulo="Inspiração de forma">
+        <Secao titulo="A anatomia">
           <p>
-            O vocabulário de interação — cena em tela cheia, painéis translúcidos, separação por
-            slider, isolamento de estrutura, busca — é inspirado em{' '}
+            O corpo desta cena é anatomia de verdade. As malhas vêm de{' '}
+            <a
+              className="underline"
+              href="https://lifesciencedb.jp/bp3d/"
+              rel="noreferrer noopener"
+              target="_blank"
+            >
+              BodyParts3D
+            </a>{' '}
+            4.0, anatomia de referência de um adulto masculino, do Database Center for Life Science
+            (DBCLS), licenciada{' '}
+            <a
+              className="underline"
+              href="https://creativecommons.org/licenses/by/4.0/"
+              rel="noreferrer noopener"
+              target="_blank"
+            >
+              CC BY 4.0
+            </a>
+            . Elas chegam aqui pela conversão para navegador publicada em{' '}
             <a
               className="underline"
               href="https://github.com/ashemag/human-atlas"
@@ -100,12 +127,25 @@ export default function Fontes() {
             >
               human-atlas
             </a>
-            , de Ashe Magalhaes (MIT). Nenhum código, dado ou geometria foi reaproveitado.
+            , de Ashe Magalhaes (código MIT), de onde também vem o vocabulário de interação: cena em
+            tela cheia, painéis translúcidos, separação por slider, isolamento de estrutura, busca.
           </p>
           <p>
-            Toda a geometria da cena é gerada por código neste repositório: não há arquivo{' '}
-            <code>.glb</code>, <code>.obj</code> nem qualquer asset binário. As dependências mantêm
-            suas respectivas licenças.
+            Daquele corpo inteiro — 2.234 malhas, 15 sistemas — este atlas usa doze estruturas:{' '}
+            <strong>só as que o processo espiritual do livro nomeia</strong>. Todo o resto foi
+            omitido, e nenhum órgão foi acrescentado por conta própria. As malhas foram unidas por
+            conceito anatômico, simplificadas para a web e postas na escala da cena por{' '}
+            <code>scripts/construir-anatomia.mjs</code>, que é reexecutável e registra o que fez.
+          </p>
+          <p>
+            O que não é órgão continua sendo geometria gerada por código: as camadas do microcosmo,
+            os três santuários, a rosa-do-coração, a cundalini, a medula espinal, os cordões do
+            simpático e as correntes de partículas. Nada disso existe como malha porque nada disso é
+            objeto de dissecação.
+          </p>
+          <p>
+            Este é um atlas de estudo, não uma ferramenta diagnóstica ou cirúrgica. As dependências
+            mantêm suas respectivas licenças.
           </p>
         </Secao>
       </div>

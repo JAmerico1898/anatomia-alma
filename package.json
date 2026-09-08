@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "check": "tsc --noEmit",
+    "build:anatomia": "node scripts/construir-anatomia.mjs",
     "validate:corpus": "node scripts/validate-corpus.mjs",
     "validate:scene": "node scripts/validate-scene.mjs",
     "test:e2e": "playwright test",
@@ -30,6 +31,7 @@
     "@types/three": "^0.185.4",
     "axe-core": "^4.13.0",
     "esbuild": "^0.28.2",
+    "meshoptimizer": "^1.2.0",
     "postcss": "^8.5.28",
     "tailwindcss": "^4.3.3",
     "typescript": "^7.0.2"

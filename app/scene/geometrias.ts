@@ -1,11 +1,13 @@
 import * as THREE from 'three';
 import type { Estrutura, FormaGeometrica, Vec3 } from '../corpus/tipos';
-import { construirFigura } from './figura';
+import type { Anatomia } from './anatomia';
 import {
   corDoSistema,
-  materialDeCasca,
+  materialDaFigura,
+  materialDeCamada,
   materialDeCorrente,
   materialDeFoco,
+  materialDeOrgao,
   materialDeRegiao,
   materialDeTubo,
 } from './materiais';
@@ -39,32 +41,46 @@ function curva(pontos: readonly Vec3[]): THREE.CatmullRomCurve3 {
   return new THREE.CatmullRomCurve3(pontos.map(v), false, 'catmullrom', 0.4);
 }
 
-export function construirForma(e: Estrutura): Construida {
+export function construirForma(e: Estrutura, anatomia: Anatomia): Construida {
   const cor = corDoSistema(e.sistema);
   const f: FormaGeometrica = e.forma;
 
   switch (f.tipo) {
-    case 'figura': {
-      const g = construirFigura();
-      g.position.copy(v(e.posicao));
-      const materiais: THREE.Material[] = [];
-      const alvos: THREE.Object3D[] = [];
-      g.traverse((o) => {
-        if ((o as THREE.Mesh).isMesh) {
-          alvos.push(o);
-          const m = (o as THREE.Mesh).material as THREE.Material;
-          if (!materiais.includes(m)) materiais.push(m);
-        }
-      });
-      return { objeto: g, ancora: v(e.posicao), alvos, materiais };
+    case 'malha': {
+      // Anatomia de verdade: a malha vem pronta, em coordenadas de mundo já na
+      // escala do §6.1. Não há transform a aplicar — e por isso, como nos tubos,
+      // a âncora tem de vir do arquivo e não de `getWorldPosition`.
+      const parte = anatomia.partes.get(f.parte);
+      if (!parte) throw new Error(`anatomia não tem a parte "${f.parte}" (${e.id})`);
+
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.BufferAttribute(parte.posicoes, 3));
+      g.setAttribute('normal', new THREE.BufferAttribute(parte.normais, 3, true));
+      g.setIndex(new THREE.BufferAttribute(parte.indices, 1));
+      g.computeBoundingSphere();
+
+      const material =
+        f.estilo === 'pele'
+          ? materialDaFigura()
+          : f.estilo === 'orgao'
+            ? materialDeOrgao(cor)
+            : materialDeFoco(cor);
+      const malha = new THREE.Mesh(g, material);
+      // A pele envolve tudo: desenhá-la por último evita que ela apague o que
+      // há dentro dela quando o depth test decide a ordem sozinho.
+      if (f.estilo === 'pele') malha.renderOrder = 8;
+      else if (f.estilo === 'orgao') malha.renderOrder = 5;
+      return { objeto: malha, ancora: v(parte.ancora), alvos: [malha], materiais: [material] };
     }
 
-    case 'casca': {
-      const material = materialDeCasca(cor);
-      const malha = new THREE.Mesh(new THREE.IcosahedronGeometry(f.raio, 4), material);
+    case 'camada': {
+      const material = materialDeCamada(cor);
+      // Detalhe 5: com o Fresnel apertado, a facetagem do icosaedro de detalhe
+      // 4 aparecia como anéis sobre o papel claro.
+      const malha = new THREE.Mesh(new THREE.IcosahedronGeometry(f.raio, 5), material);
       malha.position.copy(v(e.posicao));
       malha.renderOrder = 10;
-      // Cascas não entram no raycast: elas envolvem tudo e roubariam todo
+      // Camadas não entram no raycast: elas envolvem tudo e roubariam todo
       // clique. São selecionáveis pelo painel e pela busca.
       return { objeto: malha, ancora: v(e.posicao), alvos: [], materiais: [material] };
     }
@@ -92,20 +108,10 @@ export function construirForma(e: Estrutura): Construida {
       );
       malha.position.copy(v(e.posicao));
       malha.rotation.x = Math.PI / 2;
-      return { objeto: malha, ancora: v(e.posicao), alvos: [malha], materiais: [material] };
-    }
-
-    case 'par': {
-      const material = materialDeFoco(cor);
-      const grupo = new THREE.Group();
-      const alvos: THREE.Object3D[] = [];
-      for (const s of [1, -1] as const) {
-        const malha = new THREE.Mesh(new THREE.SphereGeometry(f.raio, 18, 12), material);
-        malha.position.copy(v(e.posicao)).addScaledVector(v(f.offset), s);
-        grupo.add(malha);
-        alvos.push(malha);
-      }
-      return { objeto: grupo, ancora: v(e.posicao), alvos, materiais: [material] };
+      // A âncora é um ponto SOBRE o anel: o centro dele é o furo, e um raio
+      // mirado ali atravessa o vazio sem nunca tocar a geometria.
+      const ancora = v(e.posicao).add(new THREE.Vector3(f.raio, 0, 0));
+      return { objeto: malha, ancora, alvos: [malha], materiais: [material] };
     }
 
     case 'tubo': {

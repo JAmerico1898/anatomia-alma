@@ -9,10 +9,10 @@ export * from './tipos';
 /** Os sete raios do sol divino (I-3, p. 40), como cor de identidade. */
 export const SISTEMAS: readonly Sistema[] = [
   {
-    id: 'cascas',
-    nome: 'Cascas do microcosmo',
+    id: 'camadas',
+    nome: 'Camadas do microcosmo',
     raio: 'violeta',
-    cor: '#8a7fb0',
+    cor: '#6a5c98',
     descricao:
       'As quatro esferas concêntricas do sistema de vida: da personalidade, no centro, ao campo espiritual magnético sétuplo, na borda.',
     ordem: 1,
@@ -21,7 +21,7 @@ export const SISTEMAS: readonly Sistema[] = [
     id: 'santuarios',
     nome: 'Os três santuários',
     raio: 'índigo',
-    cor: '#5f6f9e',
+    cor: '#4a5b8a',
     descricao:
       'Cabeça, coração e pelve — os três egos naturais, que despertam nessa ordem inversa no crescimento da criança.',
     ordem: 2,
@@ -30,7 +30,7 @@ export const SISTEMAS: readonly Sistema[] = [
     id: 'focos',
     nome: 'Focos gnósticos',
     raio: 'áureo',
-    cor: '#d8b565',
+    cor: '#a8801f',
     descricao: 'Os centros pelos quais a luz da Gnosis entra no sistema e nele opera.',
     ordem: 3,
   },
@@ -38,7 +38,7 @@ export const SISTEMAS: readonly Sistema[] = [
     id: 'fogo-i',
     nome: 'Fogo serpentino — sistema espinal',
     raio: 'vermelho',
-    cor: '#b0574e',
+    cor: '#9c4137',
     descricao:
       'O sistema coluna vertebral–cérebro, sede do fogo da consciência dialética. O que não se converte, e sim se extingue.',
     ordem: 4,
@@ -47,7 +47,7 @@ export const SISTEMAS: readonly Sistema[] = [
     id: 'fogo-ii',
     nome: 'Fogo serpentino — simpático',
     raio: 'azul',
-    cor: '#5b8ba6',
+    cor: '#3f7692',
     descricao: 'A futura segunda medula espinal: Pingalá, Idá e a torre dos mistérios.',
     ordem: 5,
   },
@@ -55,7 +55,7 @@ export const SISTEMAS: readonly Sistema[] = [
     id: 'figado-baco',
     nome: 'Sistema fígado-baço',
     raio: 'laranja',
-    cor: '#c08a52',
+    cor: '#a3671f',
     descricao: 'O domínio do eu sanguíneo, do ser-desejo — que tem no corpo uma sede determinada.',
     ordem: 6,
   },
@@ -63,7 +63,7 @@ export const SISTEMAS: readonly Sistema[] = [
     id: 'correntes',
     nome: 'Sangue, éteres e correntes',
     raio: 'verde',
-    cor: '#7e9a76',
+    cor: '#5b7c51',
     descricao: 'O que circula: sangue, éteres, hormônios e formas-pensamento.',
     ordem: 7,
   },

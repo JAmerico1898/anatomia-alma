@@ -2,6 +2,7 @@
 // 8 graus. Só é possível porque nenhum módulo de app/scene toca o DOM ou o
 // WebGLRenderer (emenda E9).
 //   node scripts/validate-scene.mjs
+import { readFileSync } from 'node:fs';
 import * as THREE from 'three';
 import { carregar } from './carregar.mjs';
 
@@ -10,25 +11,36 @@ const ok = (cond, msg) => { if (!cond) erros.push(msg); };
 
 const { ESTRUTURAS, ESTRUTURA_POR_ID } = await carregar('app/corpus/corpus.ts');
 const { construirCena, ESTADO_INICIAL, progressoDeAtivacao } = await carregar('app/scene/construir.ts');
-const { dentroDaFigura, PES_Y, TOPO_Y } = await carregar('app/scene/figura.ts');
+const { decodificarAnatomia, dentroDaFigura, PES_Y, TOPO_Y, ID_DA_PELE } =
+  await carregar('app/scene/anatomia.ts');
 const { projetarRotulos } = await carregar('app/scene/rotulos.ts');
 
-const cena = construirCena();
+// A mesma anatomia real que o navegador baixa — lida do disco, não da rede.
+const manifesto = JSON.parse(readFileSync('public/anatomia.json', 'utf8'));
+const binBruto = readFileSync('public/anatomia.bin');
+const anatomia = decodificarAnatomia(
+  manifesto,
+  binBruto.buffer.slice(binBruto.byteOffset, binBruto.byteOffset + binBruto.byteLength),
+);
+const dentro = (p) => dentroDaFigura(anatomia, p);
+
+const cena = construirCena(anatomia);
 const LARGURA = 1440;
 const ALTURA = 900;
 
 /** As quatro vistas do §7.3: ¾, frente, lado, costas. */
 const VISTAS = {
-  'três-quartos': [2.4, 0.9, 2.9],
-  frente: [0, 0.1, 3.7],
-  lado: [3.7, 0.1, 0],
-  costas: [0, 0.1, -3.7],
+  'três-quartos': [1.95, 0.35, 2.4],
+  frente: [0, -0.25, 3.2],
+  lado: [3.2, -0.25, 0],
+  costas: [0, -0.25, -3.2],
 };
+const ALVO = [0, -0.38, 0];
 
 function camera(pos) {
   const c = new THREE.PerspectiveCamera(42, LARGURA / ALTURA, 0.1, 100);
   c.position.set(...pos);
-  c.lookAt(0, -0.1, 0);
+  c.lookAt(...ALVO);
   c.updateMatrixWorld(true);
   c.updateProjectionMatrix();
   return c;
@@ -51,29 +63,53 @@ for (const e of ESTRUTURAS) {
 ok(CONCRETAS.length === 29, `1: ${CONCRETAS.length} estruturas concretas, esperadas 29`);
 
 // ── 2. Nenhuma estrutura interna flutua fora da figura.
-// Cascas envolvem o corpo por definição; `formas-pensamento` circula por fora
+// Camadas envolvem o corpo por definição; `formas-pensamento` circula por fora
 // dele, no campo de respiração (I-4, p. 48). Ambas ficam de fora da checagem.
 const FORA_POR_DESIGN = new Set(['formas-pensamento']);
 for (const e of CONCRETAS) {
-  if (e.forma.tipo === 'casca' || FORA_POR_DESIGN.has(e.id)) continue;
+  if (e.forma.tipo === 'camada' || FORA_POR_DESIGN.has(e.id)) continue;
 
   const pontos = [];
   if (e.forma.tipo === 'tubo' || e.forma.tipo === 'corrente') pontos.push(...e.forma.curva);
-  else if (e.forma.tipo === 'par') {
-    for (const s of [1, -1]) {
-      pontos.push(e.posicao.map((c, i) => c + s * e.forma.offset[i]));
-    }
-  } else pontos.push(e.posicao);
+  else pontos.push(e.posicao);
 
   for (const p of pontos) {
-    ok(dentroDaFigura(p), `2: ${e.id} tem ponto fora da figura: [${p.map((n) => n.toFixed(3))}]`);
+    ok(dentro(p), `2: ${e.id} tem ponto fora da figura: [${p.map((n) => n.toFixed(3))}]`);
   }
 }
 
-// As cascas precisam CONTER a figura inteira, não cortá-la.
-for (const e of ESTRUTURAS.filter((x) => x.forma.tipo === 'casca')) {
-  const alcance = Math.max(Math.abs(PES_Y), Math.abs(TOPO_Y));
-  ok(e.forma.raio > alcance, `2: casca ${e.id} (r=${e.forma.raio}) corta a figura (alcance ${alcance})`);
+// 2b. Toda malha anatômica está de fato no arquivo, e a `posicao` declarada no
+// corpus é o centro MEDIDO da malha — nunca um palpite que envelheceu.
+for (const e of ESTRUTURAS) {
+  if (e.forma.tipo !== 'malha') continue;
+  const parte = anatomia.partes.get(e.forma.parte);
+  ok(parte, `2b: ${e.id} referencia a parte inexistente "${e.forma.parte}"`);
+  if (!parte) continue;
+  const d = Math.hypot(...parte.centro.map((c, i) => c - e.posicao[i]));
+  ok(d < 0.01, `2b: posicao de ${e.id} está a ${d.toFixed(3)} do centro da malha`);
+  ok(parte.triangulos > 0 || parte.indices.length > 0, `2b: malha de ${e.id} está vazia`);
+}
+
+// As camadas precisam CONTER o corpo inteiro, não cortá-lo. O corpo é a caixa
+// medida da pele; a camada é uma esfera na posição declarada por ela.
+const caixaDoCorpo = anatomia.partes.get(ID_DA_PELE).caixa;
+ok(
+  Math.abs(caixaDoCorpo[0][1] - PES_Y) < 0.01 && Math.abs(caixaDoCorpo[1][1] - TOPO_Y) < 0.01,
+  `2: a pele não ocupa a escala do §6.1 (${caixaDoCorpo[0][1]}…${caixaDoCorpo[1][1]})`,
+);
+for (const e of ESTRUTURAS.filter((x) => x.forma.tipo === 'camada')) {
+  let alcance = 0;
+  for (const x of [caixaDoCorpo[0][0], caixaDoCorpo[1][0]]) {
+    for (const y of [caixaDoCorpo[0][1], caixaDoCorpo[1][1]]) {
+      for (const z of [caixaDoCorpo[0][2], caixaDoCorpo[1][2]]) {
+        alcance = Math.max(alcance, Math.hypot(x - e.posicao[0], y - e.posicao[1], z - e.posicao[2]));
+      }
+    }
+  }
+  ok(
+    e.forma.raio > alcance,
+    `2: camada ${e.id} (r=${e.forma.raio}) corta o corpo (alcance ${alcance.toFixed(3)})`,
+  );
 }
 
 // ── 3. Toda estrutura com alvo é alcançável por raycast, em 4 ângulos.

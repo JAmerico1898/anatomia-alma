@@ -34,17 +34,17 @@ export function Detalhe({
     <aside
       role="dialog"
       aria-label={`Detalhe: ${e.nome}`}
-      className="vidro pointer-events-auto flex max-h-full w-full flex-col overflow-hidden rounded-t-xl lg:max-w-md lg:rounded-xl"
+      className="vidro pointer-events-auto flex max-h-full w-full flex-col overflow-hidden rounded-t-lg lg:max-w-xs lg:rounded-lg lg:max-h-[calc(100dvh-11rem)]"
     >
-      <header className="flex items-start justify-between gap-4 border-b border-[var(--color-borda)] px-5 py-4">
+      <header className="flex items-start justify-between gap-3 border-b border-[var(--color-borda)] px-4 py-3">
         <div>
           <div className="flex items-center gap-2">
-            <span aria-hidden className="size-2.5 rounded-full" style={{ background: sistema?.cor }} />
+            <span aria-hidden className="size-2 rounded-full" style={{ background: sistema?.cor }} />
             <span className="rotulo text-[var(--color-texto-3)]">{sistema?.nome}</span>
           </div>
-          <h2 className="mt-1.5 text-xl font-semibold leading-tight">{e.nome}</h2>
+          <h2 className="mt-1 text-lg font-semibold leading-tight">{e.nome}</h2>
           {e.sinonimos.length > 0 ? (
-            <p className="mt-1 text-sm italic text-[var(--color-texto-3)]">
+            <p className="mt-0.5 text-xs italic text-[var(--color-texto-3)]">
               {e.sinonimos.join(' · ')}
             </p>
           ) : null}
@@ -58,21 +58,21 @@ export function Detalhe({
         </button>
       </header>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
-        <p className="leading-relaxed text-[var(--color-texto-2)]">{e.descricao}</p>
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
+        <p className="text-sm leading-relaxed text-[var(--color-texto-2)]">{e.descricao}</p>
 
-        <div className="mt-5 grid gap-3 sm:grid-cols-2">
-          <div className="rounded-lg border border-[var(--color-borda)] p-3">
+        <div className="mt-4 grid gap-2">
+          <div className="rounded-md border border-[var(--color-borda)] p-2.5">
             <p className="rotulo text-[var(--color-texto-3)]">Homem dialético</p>
-            <p className="mt-1.5 text-sm leading-relaxed">{e.estadoDialetico}</p>
+            <p className="mt-1 text-xs leading-relaxed">{e.estadoDialetico}</p>
           </div>
-          <div className="rounded-lg border border-[var(--color-rosa)]/30 bg-[var(--color-rosa)]/[0.04] p-3">
+          <div className="rounded-md border border-[var(--color-rosa)]/30 bg-[var(--color-rosa)]/[0.04] p-2.5">
             <p className="rotulo text-[var(--color-rosa)]">Novo homem</p>
-            <p className="mt-1.5 text-sm leading-relaxed">{e.estadoNovo}</p>
+            <p className="mt-1 text-xs leading-relaxed">{e.estadoNovo}</p>
           </div>
         </div>
 
-        <p className="mt-4 text-sm text-[var(--color-texto-2)]">
+        <p className="mt-3 text-xs text-[var(--color-texto-2)]">
           {e.grauDeAtivacao === null ? (
             <span className="text-[var(--color-texto-3)]">
               Não muda de estado em grau nenhum da senda.
@@ -91,15 +91,15 @@ export function Detalhe({
           )}
         </p>
 
-        <section className="mt-6">
+        <section className="mt-4">
           <h3 className="rotulo text-[var(--color-texto-3)]">No livro</h3>
-          <div className="mt-3 space-y-4">
+          <div className="mt-2 space-y-3">
             {e.citacoes.map((c, i) => (
-              <figure key={i} className="border-l-2 border-[var(--color-borda)] pl-4">
-                <blockquote className="serifa text-sm leading-relaxed text-[var(--color-texto-2)]">
+              <figure key={i} className="border-l-2 border-[var(--color-borda)] pl-3">
+                <blockquote className="serifa text-xs leading-relaxed text-[var(--color-texto-2)]">
                   “{c.texto}”
                 </blockquote>
-                <figcaption className="mt-1 text-xs text-[var(--color-texto-3)]">
+                <figcaption className="mt-1 text-[11px] text-[var(--color-texto-3)]">
                   {c.capitulo}, p. {c.pagina}
                 </figcaption>
               </figure>
@@ -108,9 +108,9 @@ export function Detalhe({
         </section>
 
         {e.ligacoes.length > 0 ? (
-          <section className="mt-6">
+          <section className="mt-4">
             <h3 className="rotulo text-[var(--color-texto-3)]">Liga-se a</h3>
-            <ul className="mt-3 flex flex-wrap gap-2">
+            <ul className="mt-2 flex flex-wrap gap-1.5">
               {e.ligacoes.map((outro) => {
                 const o = ESTRUTURA_POR_ID.get(outro);
                 if (!o) return null;
@@ -118,7 +118,7 @@ export function Detalhe({
                   <li key={outro}>
                     <button
                       onClick={() => onIrPara(outro)}
-                      className="flex items-center gap-2 rounded-full border border-[var(--color-borda)] px-3 py-1 text-sm text-[var(--color-texto-2)] transition-colors hover:border-[var(--color-rosa)] hover:text-[var(--color-texto)]"
+                      className="flex items-center gap-1.5 rounded-full border border-[var(--color-borda)] px-2.5 py-0.5 text-xs text-[var(--color-texto-2)] transition-colors hover:border-[var(--color-rosa)] hover:text-[var(--color-texto)]"
                     >
                       <span
                         aria-hidden
@@ -135,14 +135,14 @@ export function Detalhe({
         ) : null}
 
         {e.verbetes.length > 0 ? (
-          <section className="mt-6 pb-2">
+          <section className="mt-4 pb-1">
             <h3 className="rotulo text-[var(--color-texto-3)]">No Glossário</h3>
-            <ul className="mt-3 flex flex-wrap gap-2">
+            <ul className="mt-2 flex flex-wrap gap-1.5">
               {e.verbetes.map((slug) => (
                 <li key={slug}>
                   <Link
                     href={`/glossario#${slug}`}
-                    className="serifa rounded-full border border-[var(--color-borda)] px-3 py-1 text-sm text-[var(--color-texto-2)] transition-colors hover:border-[var(--color-rosa)] hover:text-[var(--color-texto)]"
+                    className="serifa rounded-full border border-[var(--color-borda)] px-2.5 py-0.5 text-xs text-[var(--color-texto-2)] transition-colors hover:border-[var(--color-rosa)] hover:text-[var(--color-texto)]"
                   >
                     {VERBETE_POR_SLUG.get(slug)?.termo ?? slug}
                   </Link>
@@ -153,11 +153,11 @@ export function Detalhe({
         ) : null}
       </div>
 
-      <footer className="border-t border-[var(--color-borda)] px-5 py-3">
+      <footer className="border-t border-[var(--color-borda)] px-4 py-2">
         <button
           onClick={() => onIsolar(!isolando)}
           aria-pressed={isolando}
-          className={`w-full rounded-lg border px-4 py-2.5 text-sm transition-colors ${
+          className={`w-full rounded-md border px-3 py-1.5 text-xs transition-colors ${
             isolando
               ? 'border-[var(--color-rosa)] bg-[var(--color-rosa)]/10 text-[var(--color-rosa)]'
               : 'border-[var(--color-borda)] text-[var(--color-texto-2)] hover:text-[var(--color-texto)]'

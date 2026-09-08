@@ -54,15 +54,13 @@ export function MiniCena() {
       aria-hidden
       className="pointer-events-none fixed right-6 top-1/2 z-10 hidden h-64 w-64 -translate-y-1/2 overflow-hidden rounded-xl border border-[var(--color-borda)] lg:block xl:h-80 xl:w-80"
     >
-      <div className="relative size-full">
+      <div className="papel relative size-full">
         <Cena
           grau={grau}
           sistemas={TODOS}
           separar={0}
           foco={null}
           isolar={false}
-          dividida={false}
-          natureza={null}
           vista="tres-quartos"
           rotacaoAutomatica
           onSelecionar={() => {}}

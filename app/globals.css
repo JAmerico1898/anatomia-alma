@@ -1,37 +1,42 @@
 @import 'tailwindcss';
 
 /*
-  Tema escuro fixo (§8.1 do spec). A cena é luz sobre trevas e não sobrevive a
-  uma inversão sem recalibrar todos os shaders — não há alternador claro/escuro.
+  Tema claro fixo (§8.1, emenda E18). O fundo é o mesmo papel do Human Atlas —
+  a cena é um corpo iluminado sobre claro, e não sobrevive a uma inversão sem
+  recalibrar todos os shaders. Não há alternador claro/escuro.
 */
 @theme {
-  --color-fundo: #07080d;
-  --color-fundo-2: #0c0e16;
-  --color-vidro: oklch(1 0 0 / 4%);
-  --color-borda: oklch(1 0 0 / 8%);
-  --color-texto: #e6e7ee;
-  --color-texto-2: #a4a7b8;
-  --color-texto-3: #82869b;
+  --color-fundo: #f3f4f4;
+  --color-fundo-2: #ffffff;
+  --color-vidro: oklch(1 0 0 / 88%);
+  --color-borda: oklch(0.28 0.03 250 / 12%);
+  --color-texto: #20242b;
+  --color-texto-2: #4b535d;
+  --color-texto-3: #5e6771;
 
-  /* Os sete raios do sol divino — I-3, p. 40. Cor é informação. */
-  --color-cascas: #8a7fb0;
-  --color-santuarios: #5f6f9e;
-  --color-focos: #d8b565;
-  --color-fogo-i: #b0574e;
-  --color-fogo-ii: #5b8ba6;
-  --color-figado-baco: #c08a52;
-  --color-correntes: #7e9a76;
+  /*
+    Os sete raios do sol divino — I-3, p. 40. Cor é informação: o matiz é o que
+    o livro nomeia, e ele não mudou. O que mudou foi a luminosidade, para que os
+    sete continuem legíveis sobre papel claro em vez de sobre trevas.
+  */
+  --color-camadas: #6a5c98;
+  --color-santuarios: #4a5b8a;
+  --color-focos: #a8801f;
+  --color-fogo-i: #9c4137;
+  --color-fogo-ii: #3f7692;
+  --color-figado-baco: #a3671f;
+  --color-correntes: #5b7c51;
 
   /* Acentos de estado, usados só onde o livro os nomeia — II-5, p. 224. */
-  --color-ida-dialetica: #a33c3c;
-  --color-ida-nova: #9b6fc4;
-  --color-rosa: #e8c66a;
+  --color-ida-dialetica: #9c3535;
+  --color-ida-nova: #6f4b9c;
+  --color-rosa: #7a5a0c;
 
   --font-serifa: var(--fonte-serifa), Georgia, 'Times New Roman', serif;
 }
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 html,
@@ -45,11 +50,29 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Painéis glass do §8.1. */
+/*
+  Painéis do §8.1. No claro eles deixam de ser vidro escuro sobre trevas e
+  passam a ser cartão: branco quase opaco, hairline e sombra baixa — é a sombra,
+  não a borda, que os separa do fundo.
+*/
 .vidro {
-  background: color-mix(in oklab, var(--color-fundo-2) 72%, transparent);
-  backdrop-filter: blur(14px) saturate(1.2);
+  background: var(--color-vidro);
+  backdrop-filter: blur(14px) saturate(1.1);
   border: 1px solid var(--color-borda);
+  box-shadow:
+    0 1px 2px oklch(0.28 0.03 250 / 5%),
+    0 8px 24px oklch(0.28 0.03 250 / 7%);
+}
+
+/*
+  O fundo da cena: papel com um horizonte discreto, como na referência. O canvas
+  é transparente e desenha por cima disto, o que dá o degradê de graça e sem um
+  plano a mais na cena.
+*/
+.papel {
+  background:
+    radial-gradient(120% 70% at 50% 108%, oklch(0.28 0.03 250 / 7%) 0%, transparent 62%),
+    linear-gradient(180deg, #f6f7f7 0%, #f3f4f4 46%, #eceeef 100%);
 }
 
 /* Citações e verbetes do Glossário, ecoando o Adobe Garamond do miolo. */

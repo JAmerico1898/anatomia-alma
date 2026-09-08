@@ -5,7 +5,10 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { ESTRUTURA_POR_ID } from '../corpus/corpus';
 import type { SistemaId } from '../corpus/tipos';
+import { carregarAnatomia, type Anatomia } from './anatomia';
 import { construirCena, type CenaConstruida } from './construir';
+import { PES_Y } from './anatomia';
+import { materialDeSombra } from './materiais';
 import { projetarRotulos, type Rotulo } from './rotulos';
 
 /**
@@ -22,26 +25,42 @@ export interface PropsDaCena {
   separar: number;
   foco: string | null;
   isolar: boolean;
-  /** `dividida` desenha dois viewports no MESMO canvas, por scissor. */
-  dividida: boolean;
-  /** Em apresentação alternada; ignorado quando `dividida`. */
-  natureza: 'dialetico' | 'novo' | null;
   vista: Vista;
   rotacaoAutomatica: boolean;
   onSelecionar: (id: string | null) => void;
 }
 
+/**
+ * Enquadramento: o assunto é o CORPO, não a aura. As distâncias são calibradas
+ * para que a figura (1.80 de altura) ocupe cerca de três quartos da vertical,
+ * deixando as camadas transbordarem um pouco do quadro em vez de encolherem o
+ * corpo para caberem inteiras.
+ */
 const POSICAO_DA_VISTA: Record<Vista, [number, number, number]> = {
-  'tres-quartos': [2.4, 0.9, 2.9],
-  frente: [0, 0.1, 3.9],
-  lado: [3.9, 0.1, 0],
-  costas: [0, 0.1, -3.9],
+  'tres-quartos': [1.95, 0.35, 2.4],
+  frente: [0, -0.25, 3.2],
+  lado: [3.2, -0.25, 0],
+  costas: [0, -0.25, -3.2],
 };
 
-const ALVO_PADRAO = new THREE.Vector3(0, -0.1, 0);
+/** O centro geométrico da figura, não a origem — a rosa fica na altura do peito. */
+const ALVO_PADRAO = new THREE.Vector3(0, -0.38, 0);
+
+/**
+ * Estruturas que CONTÊM outras: a pele e as vísceras. Um clique só cai nelas se
+ * não houver nada mais específico atrás do ponteiro.
+ */
+const INVOLUCROS = new Set(
+  [...ESTRUTURA_POR_ID.values()]
+    .filter((e) => e.forma.tipo === 'malha' && e.forma.estilo !== 'foco')
+    .map((e) => e.id),
+);
 
 export function Cena(props: PropsDaCena) {
   const hospedeiro = useRef<HTMLDivElement>(null);
+  // A anatomia real vem de `public/anatomia.bin`; nada pode ser montado antes.
+  const [anatomia, setAnatomia] = useState<Anatomia | null>(null);
+  const [falha, setFalha] = useState(false);
   const [rotulos, setRotulos] = useState<Rotulo[]>([]);
   const [sobre, setSobre] = useState<string | null>(null);
   const propsRef = useRef(props);
@@ -60,28 +79,54 @@ export function Cena(props: PropsDaCena) {
   } | null>(null);
 
   useEffect(() => {
+    let vivoAqui = true;
+    carregarAnatomia().then(
+      (a) => { if (vivoAqui) setAnatomia(a); },
+      () => { if (vivoAqui) setFalha(true); },
+    );
+    return () => { vivoAqui = false; };
+  }, []);
+
+  useEffect(() => {
     const div = hospedeiro.current;
-    if (!div) return;
+    if (!div || !anatomia) return;
 
     const reduzirMovimento = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.setClearColor(0x07080d, 1);
+    // Canvas transparente: o papel e o horizonte vêm do CSS atrás dele, o que
+    // dá o degradê sem custar um plano a mais na cena.
+    renderer.setClearAlpha(0);
     div.appendChild(renderer.domElement);
     renderer.domElement.style.display = 'block';
     renderer.domElement.style.touchAction = 'none';
 
+    // Luz de estúdio, não de cripta: hemisférica para o volume geral, uma chave
+    // quente à frente e um preenchimento frio atrás, de modo que a figura tenha
+    // relevo sem que nada estoure sobre o fundo claro.
     const cena = new THREE.Scene();
-    cena.add(new THREE.AmbientLight(0xffffff, 0.55));
-    const luz = new THREE.DirectionalLight(0xdfe4ff, 1.1);
-    luz.position.set(2, 3, 2.5);
+    cena.add(new THREE.HemisphereLight(0xffffff, 0xc9ccd2, 1.15));
+    const luz = new THREE.DirectionalLight(0xfff4e8, 1.35);
+    luz.position.set(1.6, 2.4, 2.6);
     cena.add(luz);
-    const contraluz = new THREE.DirectionalLight(0x6f79a8, 0.5);
-    contraluz.position.set(-2, -1, -2);
+    const contraluz = new THREE.DirectionalLight(0xcfd8ea, 0.55);
+    contraluz.position.set(-2.2, 0.6, -2.4);
     cena.add(contraluz);
 
-    const construida = construirCena();
+    // Sombra de contato: ancora a figura no chão em vez de deixá-la boiando.
+    // A elipse é JUSTA à pegada dos pés de propósito. A câmera olha o plano do
+    // chão de uns 28° apenas; uma elipse larga projeta um leque enorme cujo
+    // miolo — a única parte escura — cai bem embaixo do corpo e some atrás das
+    // pernas, deixando à vista só a periferia, que é transparente.
+    const sombra = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), materialDeSombra());
+    sombra.rotation.x = -Math.PI / 2;
+    sombra.position.set(0, PES_Y - 0.004, 0.02);
+    sombra.scale.set(0.85, 0.38, 1);
+    sombra.renderOrder = -1;
+    cena.add(sombra);
+
+    const construida = construirCena(anatomia);
     cena.add(construida.raiz);
 
     const camera = new THREE.PerspectiveCamera(42, 1, 0.05, 100);
@@ -91,7 +136,7 @@ export function Cena(props: PropsDaCena) {
     controles.target.copy(ALVO_PADRAO);
     controles.enableDamping = !reduzirMovimento;
     controles.dampingFactor = 0.08;
-    controles.minDistance = 0.4;
+    controles.minDistance = 0.15;
     controles.maxDistance = 9;
     controles.enablePan = false;
     controles.update();
@@ -113,32 +158,46 @@ export function Cena(props: PropsDaCena) {
     redimensionar();
 
     // ── Tap vs. arrasto: 8px e 250ms, como na referência.
+    // O tempo vem de `ev.timeStamp`, não de `performance.now()`: os dois estão
+    // no mesmo relógio, mas o do evento é o instante em que o dedo agiu, e o
+    // outro é o instante em que o navegador conseguiu rodar o handler. Num
+    // quadro pesado a diferença passa de 250 ms sozinha, e um toque legítimo
+    // era descartado como arrasto — justamente em quem tem o aparelho mais
+    // lento.
     let inicio: { x: number; y: number; t: number } | null = null;
     const aoPressionar = (ev: PointerEvent) => {
-      inicio = { x: ev.clientX, y: ev.clientY, t: performance.now() };
+      inicio = { x: ev.clientX, y: ev.clientY, t: ev.timeStamp };
     };
     const aoSoltar = (ev: PointerEvent) => {
       if (!inicio) return;
       const arrastou =
         Math.hypot(ev.clientX - inicio.x, ev.clientY - inicio.y) > 8 ||
-        performance.now() - inicio.t > 250;
+        ev.timeStamp - inicio.t > 250;
       inicio = null;
       if (arrastou) return;
       const id = estruturaSobPonteiro(ev);
       propsRef.current.onSelecionar(id);
     };
-    const aoMover = (ev: PointerEvent) => setSobre(estruturaSobPonteiro(ev));
+    // O raycast do hover é caro e não precisa rodar a cada evento de ponteiro:
+    // o mouse emite muito mais eventos do que a tela desenha quadros. Um por
+    // quadro basta, e é o que impede um arrasto de virar uma fila de raycasts.
+    let moveuPara: PointerEvent | null = null;
+    let quadroDeHover = 0;
+    const aoMover = (ev: PointerEvent) => {
+      moveuPara = ev;
+      quadroDeHover ||= requestAnimationFrame(() => {
+        quadroDeHover = 0;
+        if (moveuPara) setSobre(estruturaSobPonteiro(moveuPara));
+      });
+    };
 
     const raycaster = new THREE.Raycaster();
     raycaster.params.Points.threshold = 0.02;
 
     function estruturaSobPonteiro(ev: PointerEvent): string | null {
       const r = renderer.domElement.getBoundingClientRect();
-      let x = ((ev.clientX - r.left) / r.width) * 2 - 1;
+      const x = ((ev.clientX - r.left) / r.width) * 2 - 1;
       const y = -((ev.clientY - r.top) / r.height) * 2 + 1;
-      // Na apresentação dividida, cada metade é a mesma cena com outro estado:
-      // o x do ponteiro é remapeado para dentro da metade em que ele está.
-      if (propsRef.current.dividida) x = x < 0 ? x * 2 + 1 : x * 2 - 1;
       raycaster.setFromCamera(new THREE.Vector2(x, y), camera);
       const acertos = raycaster.intersectObjects(construida.alvos, true);
 
@@ -146,19 +205,21 @@ export function Cena(props: PropsDaCena) {
       // 1) ele testa a lista de malhas que recebe sem olhar a visibilidade do
       //    objeto pai, então um sistema desligado ainda seria clicável;
       // 2) ele devolve os acertos por distância, então a prioridade mais baixa
-      //    da figura precisa ser aplicada aqui, e não pela ordem do array.
-      let personalidade: string | null = null;
+      //    dos INVÓLUCROS — a pele e as vísceras, que contêm os focos — precisa
+      //    ser aplicada aqui, e não pela ordem do array. Sem isso, clicar na
+      //    rosa selecionaria a pele, e clicar na cundalini, o hemisfério.
+      let invólucro: string | null = null;
       for (const h of acertos) {
         const id = construida.estruturaDe(h.object);
         if (!id) continue;
         if (construida.nos.get(id)?.objeto.visible !== true) continue;
-        if (id === 'personalidade') {
-          personalidade ??= id;
+        if (INVOLUCROS.has(id)) {
+          invólucro ??= id;
           continue;
         }
         return id;
       }
-      return personalidade;
+      return invólucro;
     }
 
     renderer.domElement.addEventListener('pointerdown', aoPressionar);
@@ -192,36 +253,18 @@ export function Cena(props: PropsDaCena) {
 
       if (!reduzirMovimento) construida.animar(delta, p.grau);
 
-      const estadoBase = {
+      const { clientWidth: L, clientHeight: A } = div;
+      renderer.setViewport(0, 0, L, A);
+      camera.aspect = L / A || 1;
+      camera.updateProjectionMatrix();
+      construida.aplicarEstado({
         grau: p.grau,
         sistemasVisiveis: new Set(p.sistemas),
         separar: p.separar,
         foco: p.foco,
         isolar: p.isolar,
-      };
-
-      const { clientWidth: L, clientHeight: A } = div;
-      if (p.dividida) {
-        renderer.setScissorTest(true);
-        const meia = Math.floor(L / 2);
-        for (const [i, natureza] of (['dialetico', 'novo'] as const).entries()) {
-          const x = i === 0 ? 0 : meia;
-          const largura = i === 0 ? meia : L - meia;
-          camera.aspect = largura / A;
-          camera.updateProjectionMatrix();
-          renderer.setViewport(x, 0, largura, A);
-          renderer.setScissor(x, 0, largura, A);
-          construida.aplicarEstado({ ...estadoBase, natureza });
-          renderer.render(cena, camera);
-        }
-        renderer.setScissorTest(false);
-      } else {
-        renderer.setViewport(0, 0, L, A);
-        camera.aspect = L / A || 1;
-        camera.updateProjectionMatrix();
-        construida.aplicarEstado({ ...estadoBase, natureza: p.natureza });
-        renderer.render(cena, camera);
-      }
+      });
+      renderer.render(cena, camera);
 
       // Rótulos a ~12 Hz: recalcular a cada frame não muda nada visível.
       acumuladoRotulos += delta;
@@ -244,7 +287,7 @@ export function Cena(props: PropsDaCena) {
       const lista = projetarRotulos({
         cena: construida,
         camera,
-        largura: p.dividida ? Math.floor(L / 2) : L,
+        largura: L,
         altura: A,
         candidatos,
         prioridade: (id) => (id === p.foco ? 3 : id === sobreRef.current ? 2 : 1),
@@ -260,13 +303,16 @@ export function Cena(props: PropsDaCena) {
       renderer.domElement.removeEventListener('pointerdown', aoPressionar);
       renderer.domElement.removeEventListener('pointerup', aoSoltar);
       renderer.domElement.removeEventListener('pointermove', aoMover);
+      if (quadroDeHover) cancelAnimationFrame(quadroDeHover);
       controles.dispose();
+      sombra.geometry.dispose();
+      sombra.material.dispose();
       construida.dispose();
       renderer.dispose();
       div.removeChild(renderer.domElement);
       motor.current = null;
     };
-  }, []);
+  }, [anatomia]);
 
   // Vista: reposiciona a câmera sem recriar nada.
   useEffect(() => {
@@ -285,8 +331,9 @@ export function Cena(props: PropsDaCena) {
     if (props.isolar && no) {
       m.controles.target.copy(no.ancora);
       const direcao = m.camera.position.clone().sub(no.ancora).normalize();
-      const raio = Math.max(0.35, no.objeto.scale.x * 0.4);
-      m.camera.position.copy(no.ancora).addScaledVector(direcao, raio + 0.55);
+      // 2.6 ≈ 1/tan(21°), a meia-abertura vertical da câmera, mais folga.
+      const distancia = Math.max(0.3, no.raio * 3.1);
+      m.camera.position.copy(no.ancora).addScaledVector(direcao, distancia);
     } else {
       m.controles.target.copy(ALVO_PADRAO);
       if (m.camera.position.length() < 1.2) {
@@ -298,13 +345,19 @@ export function Cena(props: PropsDaCena) {
 
   return (
     <div ref={hospedeiro} className="absolute inset-0">
+      {anatomia ? null : (
+        <p className="rotulo absolute inset-0 flex items-center justify-center text-[var(--color-texto-3)]">
+          {falha ? 'A anatomia não pôde ser carregada.' : 'Carregando a anatomia…'}
+        </p>
+      )}
       <div aria-hidden className="pointer-events-none absolute inset-0">
         {rotulos.map((r) => {
           const e = ESTRUTURA_POR_ID.get(r.id);
           return (
             <span
               key={r.id}
-              className="rotulo absolute whitespace-nowrap text-[var(--color-texto-2)] drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]"
+              data-rotulo-da-cena
+              className="rotulo absolute whitespace-nowrap text-[var(--color-texto)] [text-shadow:0_0_3px_#f3f4f4,0_0_6px_#f3f4f4,0_1px_2px_#f3f4f4]"
               style={{ left: r.x, top: r.y - 7 }}
             >
               {e?.nome}

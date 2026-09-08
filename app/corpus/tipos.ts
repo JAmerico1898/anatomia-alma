@@ -9,7 +9,7 @@
  */
 
 export type SistemaId =
-  | 'cascas'
+  | 'camadas'
   | 'santuarios'
   | 'focos'
   | 'fogo-i'
@@ -22,14 +22,18 @@ export type Grau = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
 export type Vec3 = readonly [number, number, number];
 
 export type FormaGeometrica =
-  | { tipo: 'casca'; raio: number }
+  | { tipo: 'camada'; raio: number }
   | { tipo: 'foco'; raio: number }
   | { tipo: 'regiao'; raio: number }
   | { tipo: 'anel'; raio: number; espessura: number }
-  | { tipo: 'par'; offset: Vec3; raio: number }
   | { tipo: 'tubo'; curva: readonly Vec3[]; raio: number }
   | { tipo: 'corrente'; curva: readonly Vec3[]; particulas: number }
-  | { tipo: 'figura' }
+  /**
+   * Malha anatômica REAL, vinda de `public/anatomia.bin` (BodyParts3D 4.0).
+   * `parte` é a chave no manifesto; `estilo` decide o material: a pele é o
+   * corpo translúcido, `orgao` é víscera difusa, `foco` é glândula densa.
+   */
+  | { tipo: 'malha'; parte: string; estilo: 'pele' | 'orgao' | 'foco' }
   | { tipo: 'abstrata' };
 
 export interface Citacao {

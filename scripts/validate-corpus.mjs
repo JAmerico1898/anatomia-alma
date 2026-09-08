@@ -11,7 +11,7 @@ const { ESTRUTURAS, VERBETES, SENDA, SISTEMAS } = c;
 
 // 1 — inventário
 const ESPERADO = {
-  cascas: 4, santuarios: 3, focos: 7, 'fogo-i': 5, 'fogo-ii': 6, 'figado-baco': 6, correntes: 11,
+  camadas: 4, santuarios: 3, focos: 7, 'fogo-i': 5, 'fogo-ii': 6, 'figado-baco': 6, correntes: 11,
 };
 ok(ESTRUTURAS.length === 42, `1: ${ESTRUTURAS.length} estruturas, esperadas 42`);
 for (const [sis, n] of Object.entries(ESPERADO)) {

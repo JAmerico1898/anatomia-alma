@@ -8,6 +8,10 @@ import type { Estrutura, Vec3 } from './tipos';
  * Glossário (p. 376) situa no centro matemático do microcosmo. +y para cima,
  * +x para o lado ESQUERDO do sujeito, +z para a frente. Figura de 1.80 de
  * altura, pés em y=-1.30, topo da cabeça em y=+0.50.
+ *
+ * As estruturas de forma `malha` NÃO são desenhadas: são as malhas anatômicas
+ * reais de `public/anatomia.bin`, e a `posicao` delas é o centro medido da
+ * malha. `validate-scene.mjs` prova que as duas não divergem.
  */
 
 type Bruta = Omit<Estrutura, 'ligacoes' | 'verbetes'>;
@@ -32,14 +36,14 @@ const cordao = (lado: 1 | -1): readonly Vec3[] =>
   ]);
 
 export const ESTRUTURAS_BRUTAS: readonly Bruta[] = [
-  // ─────────────────────────── 1 · Cascas do microcosmo (4)
+  // ─────────────────────────── 1 · Camadas do microcosmo (4)
   {
     id: 'personalidade',
     nome: 'Personalidade',
-    sistema: 'cascas',
+    sistema: 'camadas',
     sinonimos: ['figura quádrupla', 'microplaneta', 'eu inferior'],
-    posicao: [0, -0.1, 0],
-    forma: { tipo: 'figura' },
+    posicao: [-0.001, -0.4, 0.001],
+    forma: { tipo: 'malha', parte: 'personalidade', estilo: 'pele' },
     descricao:
       'A mais interna das quatro esferas do sistema de vida, e a única que o mundo chama de "homem". O livro insiste que ela não é o microcosmo, mas seu núcleo desfigurado. É quádrupla: corpo material, corpo etérico, corpo de desejos e faculdade mental.',
     estadoDialetico:
@@ -65,10 +69,10 @@ export const ESTRUTURAS_BRUTAS: readonly Bruta[] = [
   {
     id: 'campo-de-respiracao',
     nome: 'Campo de respiração',
-    sistema: 'cascas',
+    sistema: 'camadas',
     sinonimos: ['campo de manifestação'],
-    posicao: [0, 0, 0],
-    forma: { tipo: 'casca', raio: 1.45 },
+    posicao: [0, -0.4, 0],
+    forma: { tipo: 'camada', raio: 1.08 },
     descricao:
       'O campo de força imediato que torna possível a vida da personalidade, e o elo entre ela e o ser aural. É nele que circulam as formas-pensamento do criador, e é dele que a personalidade atrai e nele que repele substâncias. Por isso a imagem mental do homem imortal tem de nascer aqui, ao lado do candidato.',
     estadoDialetico:
@@ -94,10 +98,10 @@ export const ESTRUTURAS_BRUTAS: readonly Bruta[] = [
   {
     id: 'ser-aural',
     nome: 'Ser aural',
-    sistema: 'cascas',
+    sistema: 'camadas',
     sinonimos: ['firmamento', 'lípica', 'eu superior', 'deus ígneo', 'Lúcifer dos mistérios'],
-    posicao: [0, 0, 0],
-    forma: { tipo: 'casca', raio: 1.75 },
+    posicao: [0, -0.4, 0],
+    forma: { tipo: 'camada', raio: 1.24 },
     descricao:
       'O firmamento do microcosmo: um campo organizado de modo sétuplo, feito de centros sensoriais, centros de força e focos, que carrega o carma de todas as personalidades passadas. O livro o identifica sem rodeios como o Lúcifer dos mistérios — não um inimigo externo, mas o criador de que o eu depende e que depende do eu. É o terceiro e menos conhecido dos obstáculos da senda.',
     estadoDialetico:
@@ -128,12 +132,12 @@ export const ESTRUTURAS_BRUTAS: readonly Bruta[] = [
   {
     id: 'campo-magnetico-septuplo',
     nome: 'Campo espiritual magnético sétuplo',
-    sistema: 'cascas',
-    sinonimos: ['casca externa do microcosmo'],
-    posicao: [0, 0, 0],
-    forma: { tipo: 'casca', raio: 2.1 },
+    sistema: 'camadas',
+    sinonimos: ['camada externa do microcosmo'],
+    posicao: [0, -0.4, 0],
+    forma: { tipo: 'camada', raio: 1.42 },
     descricao:
-      'A casca mais externa do sistema de vida, e a que decide de que o microcosmo se alimenta: sua sintonia determina quais energias e substâncias o sistema atrai da atmosfera. No homem dialético ela está afinada com o campo eletromagnético desta natureza, e é isso que o mantém preso. A transfiguração, diz o livro, é por isso uma questão de novas leis eletromagnéticas.',
+      'A camada mais externa do sistema de vida, e a que decide de que o microcosmo se alimenta: sua sintonia determina quais energias e substâncias o sistema atrai da atmosfera. No homem dialético ela está afinada com o campo eletromagnético desta natureza, e é isso que o mantém preso. A transfiguração, diz o livro, é por isso uma questão de novas leis eletromagnéticas.',
     estadoDialetico:
       'Sintonizado com o campo magnético central desta natureza, que mantém o sistema encerrado nesta ordem.',
     estadoNovo:
@@ -292,8 +296,8 @@ export const ESTRUTURAS_BRUTAS: readonly Bruta[] = [
     nome: 'Timo',
     sistema: 'focos',
     sinonimos: ['glândula timo'],
-    posicao: [0, 0.1, 0.06],
-    forma: { tipo: 'foco', raio: 0.022 },
+    posicao: [-0.002, 0.136, 0.041],
+    forma: { tipo: 'malha', parte: 'timo', estilo: 'foco' },
     descricao:
       'Pequena glândula situada atrás do esterno, que na infância é um depósito de forças para o crescimento posterior — depósito preenchido pelos pais. No aluno acontece o mesmo, com uma diferença decisiva: quem o preenche agora são as vibrações do átomo primordial. É por isso um recurso temporário, e o livro diz isso com todas as letras.',
     estadoDialetico:
@@ -321,8 +325,8 @@ export const ESTRUTURAS_BRUTAS: readonly Bruta[] = [
     nome: 'Esterno',
     sistema: 'focos',
     sinonimos: ['o irradiante'],
-    posicao: [0, 0.06, 0.09],
-    forma: { tipo: 'foco', raio: 0.03 },
+    posicao: [0, 0.085, 0.076],
+    forma: { tipo: 'malha', parte: 'esterno', estilo: 'foco' },
     descricao:
       'O livro lê o nome latino como "irradiante" e descreve um aparelho de doze pares de vias de entrada e saída ligadas ao fogo serpentino, mais dois pontos magnéticos: um órgão atrativo e um irradiante. No homem comum ele irradia desejo e capta o que satisfaz o desejo. O mesmo aparelho, sem trocar de peça, é o que passa a captar os quatro alimentos santos.',
     estadoDialetico:
@@ -355,8 +359,8 @@ export const ESTRUTURAS_BRUTAS: readonly Bruta[] = [
     nome: 'Pineal',
     sistema: 'focos',
     sinonimos: ['glândula pineal', 'trono do raio de Cristo'],
-    posicao: [0, 0.42, -0.02],
-    forma: { tipo: 'foco', raio: 0.014 },
+    posicao: [-0.001, 0.398, -0.037],
+    forma: { tipo: 'malha', parte: 'pineal', estilo: 'foco' },
     descricao:
       'O Glossário a chama de trono do raio de Cristo e portal aberto pelo qual a sabedoria de Deus é transmitida diretamente ao ser humano. Ela só reage quando inflamada pela luz da Gnosis através da rosa, do timo e do sangue — nunca por esforço próprio. Sua abertura é o segundo degrau da senda, o conhecimento.',
     estadoDialetico:
@@ -407,8 +411,8 @@ export const ESTRUTURAS_BRUTAS: readonly Bruta[] = [
     nome: 'Hemisfério cerebral direito',
     sistema: 'focos',
     sinonimos: [],
-    posicao: [-0.05, 0.44, 0],
-    forma: { tipo: 'regiao', raio: 0.055 },
+    posicao: [-0.037, 0.427, -0.021],
+    forma: { tipo: 'malha', parte: 'hemisferio-direito', estilo: 'orgao' },
     descricao:
       'Visto microcosmologicamente, o santuário da cabeça consiste em dois hemisférios, e este é o foco mais importante da faculdade do pensamento. É o primeiro a ser mudado pela atividade do círculo ígneo do cundalini. Ele fica à direita do sujeito, portanto em x negativo neste atlas.',
     estadoDialetico: 'Foco mais importante da faculdade do pensamento na consciência dialética.',
@@ -435,8 +439,8 @@ export const ESTRUTURAS_BRUTAS: readonly Bruta[] = [
     nome: 'Hemisfério cerebral esquerdo',
     sistema: 'focos',
     sinonimos: [],
-    posicao: [0.05, 0.44, 0],
-    forma: { tipo: 'regiao', raio: 0.055 },
+    posicao: [0.036, 0.427, -0.021],
+    forma: { tipo: 'malha', parte: 'hemisferio-esquerdo', estilo: 'orgao' },
     descricao:
       'O foco mais importante da vontade. O livro liga a mudança de sua constelação ao quarto dom do mestre, o que traz ao aluno uma nova vontade. É o terceiro degrau da senda — o autodomínio — visto por dentro do crânio.',
     estadoDialetico: 'Foco mais importante da vontade, a serviço da pressão da natureza.',
@@ -465,8 +469,8 @@ export const ESTRUTURAS_BRUTAS: readonly Bruta[] = [
     nome: 'Coluna do fogo serpentino',
     sistema: 'fogo-i',
     sinonimos: ['coluna vertebral', 'torre'],
-    posicao: [0, -0.07, -0.06],
-    forma: { tipo: 'tubo', curva: CURVA_ESPINAL, raio: 0.012 },
+    posicao: [0.004, -0.033, -0.044],
+    forma: { tipo: 'malha', parte: 'coluna-vertebral', estilo: 'orgao' },
     descricao:
       'O canal do fogo serpentino comum, sede da consciência biológica. O livro é categórico sobre o que não se pode fazer com ele: o éter de hidrogênio dos quatro alimentos santos não pode ser transferido para cá, sob pena de fermentação e explosão. Por isso o novo fogo não o converte — espera que ele se extinga de maneira completamente não forçada, no caminho da endura.',
     estadoDialetico: 'Canal do fogo serpentino comum, no qual circula o fogo da consciência dialética.',
@@ -688,8 +692,8 @@ export const ESTRUTURAS_BRUTAS: readonly Bruta[] = [
     nome: 'Medula oblonga',
     sistema: 'fogo-ii',
     sinonimos: ['ponto de encontro'],
-    posicao: [0, 0.29, -0.048],
-    forma: { tipo: 'foco', raio: 0.018 },
+    posicao: [-0.001, 0.336, -0.034],
+    forma: { tipo: 'malha', parte: 'medula-oblonga', estilo: 'foco' },
     descricao:
       'O simpático parte de um ponto situado acima da medula oblonga, e é ali que concorrem os dois cordões e a esfera de influência imediata da pineal. É o fecho do circuito: o que desce por Pingalá e sobe por Idá se encontra aqui em cima, e não em baixo.',
     estadoDialetico:
@@ -781,8 +785,8 @@ export const ESTRUTURAS_BRUTAS: readonly Bruta[] = [
     nome: 'Fígado',
     sistema: 'figado-baco',
     sinonimos: ['o vivente'],
-    posicao: [-0.09, -0.15, 0.03],
-    forma: { tipo: 'regiao', raio: 0.07 },
+    posicao: [-0.012, -0.062, 0.023],
+    forma: { tipo: 'malha', parte: 'figado', estilo: 'orgao' },
     descricao:
       'O órgão supremo de que os homens vivem, e o livro chama a atenção para o nome: em alemão e inglês, fígado é literalmente "o vivente". É por ele que saem do corpo as forças que entram pelo baço. Perde a primazia quando a vida deixa de proceder desta natureza.',
     estadoDialetico: 'O órgão supremo de que os homens vivem, saída do canal das forças etéricas.',
@@ -806,8 +810,8 @@ export const ESTRUTURAS_BRUTAS: readonly Bruta[] = [
     nome: 'Baço',
     sistema: 'figado-baco',
     sinonimos: ['sede do ser-eu'],
-    posicao: [0.1, -0.14, -0.01],
-    forma: { tipo: 'regiao', raio: 0.04 },
+    posicao: [0.089, -0.081, -0.007],
+    forma: { tipo: 'malha', parte: 'baco', estilo: 'orgao' },
     descricao:
       'Duas coisas ao mesmo tempo: a sede do núcleo do ser-eu e a principal porta de entrada das forças etéricas no corpo. Na vigília o núcleo permanece ali enrolado qual uma espiral; no sono ele sai, a espiral se desenrola, e uma fita de aparência de nuvem aparece no campo de respiração. É o órgão pelo qual o ser-desejo se alimenta e, assim, controla todo o sistema corpóreo.',
     estadoDialetico:
@@ -835,8 +839,8 @@ export const ESTRUTURAS_BRUTAS: readonly Bruta[] = [
     nome: 'Rins',
     sistema: 'figado-baco',
     sinonimos: [],
-    posicao: [0, -0.15, -0.055],
-    forma: { tipo: 'par', offset: [0.07, 0, 0], raio: 0.035 },
+    posicao: [0.001, -0.141, -0.015],
+    forma: { tipo: 'malha', parte: 'rins', estilo: 'orgao' },
     descricao:
       'Parte do domínio do eu sanguíneo. O livro os nomeia sem descrevê-los em separado: junto com o fígado, o baço e as suprarrenais, e com o plexo solar, eles formam o domínio do ser-desejo. Seu destino é o do sistema inteiro.',
     estadoDialetico: 'Parte do domínio do eu sanguíneo, do ser-desejo.',
@@ -856,8 +860,8 @@ export const ESTRUTURAS_BRUTAS: readonly Bruta[] = [
     nome: 'Suprarrenais',
     sistema: 'figado-baco',
     sinonimos: [],
-    posicao: [0, -0.1, -0.05],
-    forma: { tipo: 'par', offset: [0.07, 0, 0], raio: 0.018 },
+    posicao: [0.007, -0.091, -0.018],
+    forma: { tipo: 'malha', parte: 'suprarrenais', estilo: 'foco' },
     descricao:
       'Como os rins, nomeadas pelo livro como parte do domínio do eu sanguíneo, sem descrição própria. Estão aqui porque o livro as inclui na lista, e a honestidade do atlas exige que o que ele nomeia apareça.',
     estadoDialetico: 'Parte do domínio do eu sanguíneo, do ser-desejo.',
@@ -1191,13 +1195,13 @@ export const ESTRUTURAS_BRUTAS: readonly Bruta[] = [
       // da cabeça e descem à esquerda (x>0) — I-4, p. 48.
       curva: [
         [-0.34, -0.22, 0.1],
-        [-0.42, 0.05, 0],
-        [-0.36, 0.38, -0.06],
-        [-0.18, 0.62, 0],
-        [0, 0.7, 0.04],
-        [0.18, 0.62, 0],
-        [0.36, 0.38, -0.06],
-        [0.42, 0.05, 0],
+        [-0.4, 0.05, 0],
+        [-0.34, 0.36, -0.06],
+        [-0.17, 0.55, 0],
+        [0, 0.6, 0.04],
+        [0.17, 0.55, 0],
+        [0.34, 0.36, -0.06],
+        [0.4, 0.05, 0],
         [0.34, -0.22, 0.1],
       ],
       particulas: 400,

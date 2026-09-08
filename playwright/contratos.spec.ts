@@ -8,6 +8,13 @@ import { expect, test, type Page } from '@playwright/test';
  */
 
 const detalhe = (p: Page) => p.getByRole('dialog', { name: /^Detalhe:/ });
+const degrau = (p: Page) => p.getByRole('complementary', { name: /^Degrau da senda:/ });
+
+// O card do degrau só existe a partir de 1024px: abaixo disso ele cobriria a
+// figura que está explicando. Os contratos que o medem são, portanto, de tela
+// larga — o avanço em si, pela dock, é o mesmo em toda largura.
+const soEmTelaLarga = (p: Page) =>
+  test.skip((p.viewportSize()?.width ?? 0) < 1024, 'card do degrau é de tela larga');
 
 async function abrirExplorador(p: Page, query = '') {
   await p.goto(`/${query}`);
@@ -22,7 +29,9 @@ test('1 · selecionar uma estrutura na cena abre o Sheet com o nome certo', asyn
   // depender de adivinhar que o centro da tela tem alguma coisa.
   await abrirExplorador(page, '?sistemas=focos');
 
-  const rotulo = page.locator('span.rotulo').first();
+  // Atributo próprio: 'rotulo' é uma classe de tipografia, usada também nos
+  // cards; só os rótulos projetados sobre a cena carregam este marcador.
+  const rotulo = page.locator('span[data-rotulo-da-cena]').first();
   await expect(rotulo).toBeVisible();
 
   // Os rótulos são reprojetados a ~12 Hz, e enquanto o canvas ainda se
@@ -49,7 +58,10 @@ test('1 · selecionar uma estrutura na cena abre o Sheet com o nome certo', asyn
 
   // O rótulo é desenhado com `left: x` e `top: y - 7` sobre o ponto projetado;
   // desfazendo esse deslocamento chega-se ao ponto exato da estrutura.
-  await page.mouse.click(alvo.x, alvo.y + 7, { delay: 40 });
+  // Sem delay: o app trata como arrasto qualquer toque que passe de 250 ms
+  // entre pressionar e soltar, e sob disputa de CPU os dois eventos sintéticos
+  // já chegam separados por mais do que isso — o delay só encurtava a margem.
+  await page.mouse.click(alvo.x, alvo.y + 7);
 
   await expect(detalhe(page)).toBeVisible();
   await expect(page).toHaveURL(/foco=/);
@@ -84,30 +96,49 @@ test('3 · busca por sinônimo encontra a rosa-do-coração', async ({ page }) =
   await expect(detalhe(page).getByRole('heading', { name: 'Rosa-do-coração' })).toBeVisible();
 });
 
-test('4 · trocar de modo preserva a estrutura selecionada e atualiza a URL', async ({ page }) => {
-  await abrirExplorador(page, '?modo=senda&grau=5&foco=cordao-ida');
-  await expect(detalhe(page).getByRole('heading', { name: 'Cordão simpático esquerdo' })).toBeVisible();
+test('4 · avançar passo a passo troca o degrau, a URL e a explicação do card', async ({ page }) => {
+  soEmTelaLarga(page);
+  await abrirExplorador(page);
 
-  await page.getByRole('button', { name: 'Duas naturezas' }).click();
+  // Grau 0 é a chave: o card da direita já explica a fé, sem nada selecionado.
+  const cartao = degrau(page);
+  await expect(cartao.getByRole('heading', { name: 'Fé' })).toBeVisible();
 
-  await expect(page).toHaveURL(/modo=duas-naturezas/);
-  await expect(page).toHaveURL(/foco=cordao-ida/);
-  await expect(detalhe(page).getByRole('heading', { name: 'Cordão simpático esquerdo' })).toBeVisible();
+  await page.getByRole('button', { name: 'Próximo degrau' }).click();
+  await expect(page).toHaveURL(/grau=1/);
+  await expect(cartao.getByRole('heading', { name: 'Virtude' })).toBeVisible();
+  await expect(cartao.getByText(/vivificação do sangue/i).first()).toBeVisible();
 
-  await page.getByRole('button', { name: 'Senda' }).click();
-  await expect(page).not.toHaveURL(/modo=duas-naturezas/);
-  await expect(detalhe(page).getByRole('heading', { name: 'Cordão simpático esquerdo' })).toBeVisible();
+  await page.getByRole('button', { name: 'Próximo degrau' }).click();
+  await expect(page).toHaveURL(/grau=2/);
+  await expect(cartao.getByRole('heading', { name: 'Conhecimento' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Degrau anterior' }).click();
+  await expect(page).toHaveURL(/grau=1/);
+  await expect(cartao.getByRole('heading', { name: 'Virtude' })).toBeVisible();
 });
 
-test('5 · abaixo de 1024px, duas naturezas renderiza alternada, não dividida', async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
-  await abrirExplorador(page, '?modo=duas-naturezas');
+test('5 · o card do degrau cede o lugar ao detalhe e volta ao fechá-lo', async ({ page }) => {
+  soEmTelaLarga(page);
+  await abrirExplorador(page, '?grau=5');
+  await expect(degrau(page).getByRole('heading', { name: 'Piedade' })).toBeVisible();
 
-  // A apresentação alternada expõe o toggle dialético ⇄ novo homem.
-  await expect(page.getByRole('button', { name: /dialético ⇄/ })).toBeVisible();
-  await expect(page.getByText('novo homem', { exact: true })).toBeHidden();
+  // Uma estrutura que muda neste grau, alcançada pelo próprio card.
+  await degrau(page).getByRole('button', { name: 'Cordão simpático esquerdo' }).click();
+  await expect(detalhe(page).getByRole('heading', { name: 'Cordão simpático esquerdo' })).toBeVisible();
+  await expect(degrau(page)).toBeHidden();
+  await expect(page).toHaveURL(/foco=cordao-ida/);
 
-  // E a escolha manual sobrepõe o padrão do viewport, indo para a URL.
-  await page.getByRole('button', { name: 'dividida', exact: true }).click();
-  await expect(page).toHaveURL(/apresentacao=dividida/);
+  await page.getByRole('button', { name: 'Fechar detalhe' }).click();
+  await expect(detalhe(page)).toBeHidden();
+  await expect(degrau(page).getByRole('heading', { name: 'Piedade' })).toBeVisible();
+});
+
+test('6 · não há mais escolha pelo homem dialético', async ({ page }) => {
+  await abrirExplorador(page, '?modo=duas-naturezas&natureza=novo');
+
+  await expect(page.getByRole('button', { name: 'Duas naturezas' })).toHaveCount(0);
+  // Parâmetros herdados de links antigos são descartados na primeira escrita.
+  await page.getByRole('button', { name: 'Próximo degrau' }).click();
+  await expect(page).not.toHaveURL(/modo=|natureza=/);
 });

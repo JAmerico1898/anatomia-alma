@@ -8,7 +8,7 @@
 
 /** Arestas não direcionadas entre estruturas, com a fonte no livro ao lado. */
 export const LIGACOES: readonly (readonly [string, string])[] = [
-  // Encaixe das quatro cascas do sistema de vida — Gloss. p. 373.
+  // Encaixe das quatro camadas do sistema de vida — Gloss. p. 373.
   ['campo-magnetico-septuplo', 'ser-aural'],
   ['ser-aural', 'campo-de-respiracao'],
   ['campo-de-respiracao', 'personalidade'],
