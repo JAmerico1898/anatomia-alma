@@ -25,7 +25,7 @@ export function PaginaTexto({
     <div className="min-h-dvh bg-[var(--color-fundo)]">
       <header className="sticky top-0 z-30 border-b border-[var(--color-borda)] bg-[color-mix(in_oklab,var(--color-fundo)_88%,transparent)] backdrop-blur">
         <div className="mx-auto flex max-w-5xl flex-wrap items-baseline justify-between gap-3 px-5 py-3">
-          <Link href="/" className="rotulo text-[var(--color-texto-2)]">
+          <Link href="/" className="text-sm font-semibold text-[var(--color-texto)]">
             Anatomia da Alma
           </Link>
           <nav aria-label="Seções" className="flex flex-wrap gap-x-5 gap-y-1 text-sm">

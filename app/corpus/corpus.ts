@@ -120,6 +120,19 @@ export function estruturasDoSistema(id: SistemaId): readonly Estrutura[] {
   return ESTRUTURAS.filter((e) => e.sistema === id);
 }
 
+/**
+ * Se a estrutura tem forma que se possa isolar na figura.
+ *
+ * Uma `abstrata` não tem geometria nenhuma — o sangue, os éteres, as doze
+ * energias existem no corpus e no texto, não na cena. Uma `regiao` tem, mas é
+ * uma nuvem sem contorno: isolar um santuário deixa na tela um borrão que não
+ * ensina onde ele está. Nos dois casos não há estrutura a isolar, e o botão não
+ * deve existir.
+ */
+export function podeIsolar(e: Estrutura): boolean {
+  return e.forma.tipo !== 'abstrata' && e.forma.tipo !== 'regiao';
+}
+
 /** Busca por nome, sinônimo ou termo do Glossário ligado à estrutura. */
 export function buscarEstruturas(consulta: string): readonly Estrutura[] {
   const q = normalizarBusca(consulta);

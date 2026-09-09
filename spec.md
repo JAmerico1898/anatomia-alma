@@ -1012,3 +1012,99 @@ livre arde cheio. Como depende da câmera, o cálculo vive no shader.
 A invariante 8 de `validate-scene.mjs` trava tudo isso: nada na figura é
 wireframe, a casca não é alvo de raycast, ela é nula no grau 4 e evidente no 5,
 a pele esvai sem sumir, e o firmamento já arde antes da fé.
+
+### E28 · A composição transparente passa a ter um contrato único
+
+`app/scene/materiais.ts` e `app/scene/cena.tsx` passam a distinguir explicitamente o alfa do canvas do alfa dos materiais. Os shaders personalizados adotam saída pré-multiplicada e materiais configurados para o blending correspondente; nenhuma cor recebe multiplicação duplicada. A saída de cor dos shaders segue o mesmo tratamento de espaço de cor e tone mapping dos materiais iluminados. Esta emenda corrige a premissa técnica da E19 existente sem desfazer o papel claro, a paleta ou a ausência de tema escuro.
+
+A correção é verificada primeiro por composição numérica de fragmentos de cor conhecida sobre fundos conhecidos, com tolerância máxima de dois níveis por canal em uma leitura de 8 bits, sem tone mapping nesse teste. Depois são recalibrados camadas, personalidade, estrelas e sombra na cena completa. A conclusão exige capturas dos estados −1, 0, 4, 5 e 7, nas quatro vistas, sem aros quase negros produzidos pela composição e sem perda da distinção entre personalidade antiga e nova. Os órgãos devem continuar legíveis no grau 7. A aprovação não pode decorrer apenas de diminuir arbitrariamente a opacidade até o problema desaparecer.
+
+### E29 · Órgãos recuperam matéria e detalhe comprovável
+
+`app/scene/materiais.ts` passa a definir tratamentos distintos para órgãos, suporte corporal e focos. Órgãos não recebem transparência indiscriminada; quando uma estrutura interna precisar ser revelada, a atenuação de seu envoltório será localizada e ligada à exploração. Seleção e processo deixam de depender exclusivamente de aumentar emissividade e opacidade. A pele permanece suporte translúcido e a personalidade nova mantém presença separada, em conformidade com II-5, p. 226.
+
+`app/scene/cena.tsx` passa a usar ambiente de estúdio e tone mapping explicitamente configurados, calibrados em conjunto com os shaders da emenda anterior. Mantêm-se as cores de identificação dos sistemas; iluminação não serve para substituí-las pela paleta anatômica da referência.
+
+`scripts/construir-anatomia.mjs` ganha orçamento de simplificação orientado pela inspeção das peças compartilhadas. Hemisférios, fígado, coluna e pele são comparados com as geometrias do clone antes de se fixar uma redução. A representação de índices em `anatomia.ts` e nos arquivos produzidos deve comportar o resultado escolhido, sem truncamento. A verificação usa peças idênticas, mesma câmera, mesmo material e mesma luz: silhueta e relevos principais da versão distribuída não podem apresentar desvio superior a um pixel CSS nas vistas de inspeção aprovadas. O relatório de geração registra triângulos, vértices, tamanho e erro escolhido por estrutura. Não se acrescentam sistemas anatômicos para preencher visualmente o corpo.
+
+O ambiente é gerado por `scripts/construir-ambiente.mjs` e distribuído em `public/ambiente.bin.gz`: o mesmo PMREM de `RoomEnvironment`, 768×1024, RGBA half-float, com compressão sem perdas. `ambiente.ts` compartilha a carga de CPU; cada renderer mantém seus próprios recursos de GPU. Não há convolução por montagem. `validate-ambiente.mjs` compara cinco rugosidades contra a geração original e verifica duas cenas e o descarte de um contexto: diferença máxima observada de zero níveis por canal.
+
+A inspeção reproduzível em `scripts/validate-detalhe.mjs` compara redução anterior, distribuição e fonte nas quatro vistas, com câmera, material e iluminação iguais. Mantêm-se as faces da fonte nas cinco peças: pele 44.744 (543.288 bytes), hemisfério direito 55.452 (727.572 bytes), esquerdo 54.920 (719.532 bytes), coluna 95.804 (2.055.120 bytes) e fígado 59.642 (835.980 bytes). A redução anterior alterava contornos e relevos, especialmente sulcos cerebrais, vértebras e concavidades hepáticas. Os desvios máximos projetados de quantização são, respectivamente, 0,0064, 0,0381, 0,0343, 0,0094 e 0,0115 px CSS. Esses valores limitam os cantos das mesmas faces, sem tratar diferenças de iluminação como erro geométrico. Relatórios e capturas ficam em `.cache/visual/detalhe/`.
+
+### E30 · Campos, santuários e firmamento passam a compartilhar profundidade, não a mesma primitiva
+
+`app/scene/geometrias.ts` e `app/scene/materiais.ts` passam a representar campos como distribuições tênues de densidade, santuários como regiões locais sem membrana rígida e focos aurais como concentrações individualizáveis em um conjunto envolvente. Preserva-se a organização esférica do microcosmo descrita no Glossário, p. 373. O novo tratamento não cria órgãos nem equipara campos a tecidos físicos conhecidos.
+
+Os focos antigos e novos continuam separados no estado e na apresentação, mantendo apagamento e inflamação conforme os processos já existentes e a passagem de III-11, p. 356. O shader deve produzir profundidade por distribuição espacial, paralaxe e atenuação, sem substituir o firmamento por estrelas decorativas independentes do corpo. A configuração é determinística para comparação de capturas.
+
+A verificação exige órbita frontal, lateral e posterior, com e sem personalidade visível. Os santuários não podem produzir discos com borda dura na vista inicial; os campos devem continuar distinguíveis quando selecionados; focos aurais dianteiros e posteriores devem apresentar variação espacial perceptível durante a órbita. Na cena composta, cabeça e órgãos do tronco não podem perder legibilidade. A diferença entre estados −1, 5 e 7 deve permanecer reconhecível sem aumentar indiscriminadamente o número ou brilho de partículas.
+
+### E31 · Cada forma procedural passa a respeitar a natureza do que representa
+
+`app/scene/geometrias.ts`, `materiais.ts` e os parâmetros geométricos de `app/corpus/estruturas.ts` passam a distinguir fluxo, região, foco, cordão anatômico e agregado granular. Textos, relações e intervalos de processos permanecem congelados. As formas-pensamento deixam de ser partículas coincidentes com uma única linha: passam a concentrações tênues com seção espacial e dissolução nas extremidades, preservando o percurso descrito em I-4, pp. 47–48. Correntes internas conservam direção e participantes, com transporte visível de intensidade ou partículas em vez de aparência de cabo estático.
+
+A cundalini passa a um agregado de grânulos em torno da pineal, conforme o Glossário, p. 366; não é suficiente adicionar brilho ao toro. A rosa permanece um foco localizado, sem pétalas ou anatomia inventada. Medula e cordões são tratados separadamente: a adoção de malha depende de identificação anatômica verificável na fonte; uma alternativa procedural exige suporte para trajetos e variações de forma. O circuito mantém descida direita e retorno esquerdo, conforme II-5, p. 225. Formas abstratas continuam representadas por suas relações, sem ganhar órgãos decorativos.
+
+A conclusão exige inspeções isoladas da rosa, cundalini, medula, cordões e formas-pensamento, além do circuito montado nas vistas frontal e posterior. Os grânulos devem ser individualizáveis no isolamento; a corrente verde não pode voltar a formar uma linha uniforme em repouso ou movimento; direita e esquerda devem corresponder ao sujeito. As anotações causais de `construir.ts` conservam seus extremos e direção, mas sua aparência não pode ser confundida com a matéria da estrutura.
+
+Limite da implementação: a fonte associa `FMA7647` (spinal cord) apenas a `FJ1737`, identificado como canal central, com 160 triângulos e aproximadamente 3,6 cm de extensão vertical na fonte. Isso não identifica uma malha da medula inteira; não foi encontrada malha de tronco simpático no atlas. Medula e cordões conservam os trajetos procedurais existentes. Não se acrescentam variações de calibre ou gânglios sem suporte anatômico verificável. A cundalini granular e as correntes com seção espacial são implementadas; a reconstrução anatômica detalhada desses nervos fica de fora por esse limite de evidência.
+
+### E32 · A câmera enquadra o espaço disponível e o conjunto realmente inspecionado
+
+`app/scene/cena.tsx` passa a receber ou medir os retângulos ocupados pela interface de `app/explorador.tsx`. O enquadramento inicial considera o corpo e o espaço livre entre cabeçalho, painéis e controles. A seleção comum preserva a orientação escolhida, compensando a ocupação do painel sem obrigar uma aproximação. O isolamento usa a caixa atual da estrutura ou da união de participantes visíveis, com margem de 10% a 15%, em vez de uma distância fixa independente da interface.
+
+O cálculo é reaplicado após carga da anatomia, mudança de foco isolado, abertura ou fechamento de painel e redimensionamento. A saída do isolamento restaura a vista anterior. Objetos muito pequenos são ampliados pela câmera, nunca por alteração de suas dimensões no corpus. Planos de corte e limites de órbita devem permitir essa inspeção. A sombra corporal deixa de aparecer quando a personalidade não pertence ao conjunto mostrado.
+
+A verificação reproduz primeiro a sequência da captura `nosso-1440-f-foco-isolado.png`, registrando o que impedia a aproximação. URLs diretas com foco e isolamento devem funcionar também em carga fria. Corpo inteiro no telefone, rosa, pineal, fígado, cordões e uma entidade abstrata devem caber no retângulo útil sem interseção com painéis. No isolamento de uma peça, sua maior dimensão projetada ocupa entre 60% e 80% da dimensão correspondente disponível, salvo limite explicitamente justificado para conjuntos abstratos. A câmera permanece estável após resize e ao voltar à cena completa.
+
+### E33 · A interface deixa de comprimir conteúdo para preservar a figura
+
+`app/explorador.tsx`, `detalhe.tsx`, `degrau.tsx` e `globals.css` passam a adotar uma composição responsiva explícita. No telefone, identidade e busca deixam de disputar uma linha com larguras inflexíveis. O texto “Buscar estrutura” permanece acessível, inclusive se o botão assumir apresentação por ícone. A senda ocupa uma linha própria; sua legenda pode quebrar em outra, integralmente. Separação e vistas têm posições planejadas, sem depender do transbordamento de um flex genérico.
+
+A seleção de vista, a ação de isolamento e os controles de reprodução passam a usar formas e estados visuais consistentes. Símbolos sujeitos a apresentação como emoji são substituídos por ícones controlados, preservando nomes acessíveis. Os alvos de toque principais têm pelo menos 44×44 px. O painel de sistemas passa a distinguir expansão editorial de visibilidade na cena; recolher uma lista não desliga seu sistema.
+
+Os cartões mantêm cabeçalho e ações disponíveis, com corpo rolável para todo o conteúdo existente. A largura desktop pode crescer até 384 px em 1440 px, desde que a câmera compense o espaço. Estados, citações e sinônimos permanecem completos, sem reticências impostas para viabilizar o layout. Texto de leitura nos cartões não fica abaixo de 14 px CSS; metadados podem ser menores, desde que legíveis.
+
+A conclusão exige ausência de overflow horizontal em 390, 768, 1024 e 1440 px, leitura integral por rolagem dos detalhes mais longos e acesso por teclado a todas as 42 estruturas. Nenhuma descrição, citação ou verbete pode diferir do conteúdo anterior.
+
+### E34 · Transições apresentam a mudança sem alterar seu significado
+
+`app/scene/cena.tsx` passa a manter uma apresentação visual transitória separada do grau semântico da URL. Botões, legenda, cartão e URL respondem imediatamente; materiais e distribuições visuais convergem ao destino em 320 ms, com curva suave e sem ultrapassagem. A interpolação ocorre entre propriedades visuais calculadas para os estados válidos, evitando que um grau intermediário artificial dispare processos do corpus.
+
+`app/detalhe.tsx`, `degrau.tsx` e `globals.css` passam a usar entrada e saída de até 200 ms, com deslocamento máximo de 12 px e opacidade. Trocas entre conteúdos no mesmo cartão não movimentam desnecessariamente o painel inteiro. Uma nova interação interrompe e redireciona a transição a partir da apresentação corrente. A carga inicial de URL mostra diretamente seu estado final. Redução de movimento elimina deslocamentos e interpolação temporal.
+
+A verificação registra sequências com timestamps conhecidos em 0, 80, 160, 240, 320 e 400 ms. A passagem 4→5 deve apresentar estados visuais intermediários e terminar dentro do prazo; 5→4 durante a transição deve retornar exatamente ao destino. Repetição rápida, autoplay, mudança de seleção e isolamento não podem deixar materiais presos, alterar processos ou atrasar o estado da URL.
+
+As mudanças discretas usam `history.replaceState`, integrado a `useSearchParams` pelo Next.js instalado, sem aguardar uma navegação RSC. O laço gráfico mantém no máximo um quadro pendente na GPU por meio de uma fence WebGL2 consultada sem espera bloqueante: não reduz detalhe, ambiente ou resolução para recuperar responsividade. O raycast filtra os sistemas invisíveis antes de testar as malhas, conservando a prioridade das estruturas internas.
+
+### E35 · As rotas editoriais compartilham acabamento e preservam sua forma de leitura
+
+`app/components/pagina-texto.tsx` e `globals.css` passam a compartilhar com o explorador o tratamento da identidade, foco, links, bordas, cores e espaçamentos. `/glossario` preserva definição serifada, termo, página e ligação ao atlas; `/fontes` preserva suas seções e a distinção entre prosa e referência bibliográfica. Nenhuma dessas páginas é convertida em uma coleção de cartões estreitos.
+
+`app/senda/page.tsx` e `mini-cena.tsx` passam a reservar uma coluna real para a miniatura quando houver espaço suficiente. A miniatura acompanha a leitura com posicionamento sticky dentro dessa coluna, em vez de flutuar sobre uma região não reservada. Em larguras insuficientes, mantém-se sua ausência; o texto continua com leitura linear. A miniatura herda materiais corrigidos e enquadramento adequado ao seu próprio contêiner.
+
+A verificação cobre 390, 1024, 1280 e 1440 px, navegação por âncoras e rolagem do início ao fim. A miniatura nunca intercepta o texto, as citações mantêm todos os caracteres e a ordem de leitura permanece igual. `/glossario` e `/fontes` só recebem alterações visuais demonstravelmente necessárias à coerência; o acabamento já satisfatório dessas páginas deve ser preservado.
+
+### E36 · A cor volta a ser informação depois da travessia
+
+`app/scene/materiais.ts` passa a compensar a travessia entre o matiz nomeado no livro e o pixel composto. O token da paleta permanece a fonte da matiz; o que se corrige é a saturação perdida no tonemapping ACES e na composição de um véu de alfa baixo sobre papel quase branco. As camadas do microcosmo são pintadas com a mesma matiz saturada e escurecida, e não com o token cru; a nova personalidade segue a mesma regra em ouro. Focos, órgãos, tubos, regiões e correntes recebem a saturação equivalente na tinta e no emissivo.
+
+A pele passa a ler como carne, não como névoa: matiz mais quente e opacidade suficiente para dar volume, sem deixar de mostrar coluna, fígado, baço e rins. Os três santuários deixam de ser invisíveis, permanecendo nuvens sem contorno. Nenhuma matiz é trocada por outra, e a pré-multiplicação continua acontecendo uma única vez, pelo `premultiplied_alpha_fragment`, preservando a correção do alfa verificada em `validate-visual.mjs`.
+
+A conclusão exige que os sete raios sejam distinguíveis entre si sobre o papel claro, que o firmamento dourado e o ouro da nova personalidade permaneçam como estão, e que nenhuma estrutura interna deixe de ser legível através da pele ou sob as camadas.
+
+### E37 · A figura ocupa o quadro que lhe cabe
+
+`app/scene/cena.tsx` passa a enquadrar a figura em 86% da área livre, e não em 74%, e a deslocá-la 5% para cima dentro dessa área. O viés é aplicado ao deslocamento da janela de projeção, e não ao alvo dos controles: mover o alvo deslocaria o eixo da órbita, e a figura passaria a girar em torno de um ponto que não é o seu centro. As camadas mais externas transbordam do quadro, como já previa o enquadramento; cabeça e pés permanecem dentro dele em todas as quatro vistas.
+
+### E38 · A dock apertada devolve altura à figura
+
+`app/globals.css` passa a comprimir espaçamentos, alturas de botão e entrelinha da dock apenas onde há ponteiro fino e largura de desktop. Os 44×44 px de alvo de toque exigidos por E33 continuam valendo em toda largura estreita e em qualquer dispositivo de toque. Nenhum controle sai da dock, nenhuma legenda é removida e nenhuma linha é truncada; o que encolhe é o espaço em volta dos controles.
+
+### E39 · Só se isola o que tem forma a isolar
+
+`app/corpus/corpus.ts` passa a expor `podeIsolar`, e `app/detalhe.tsx` deixa de renderizar o rodapé de isolamento para as estruturas que não a satisfazem. Uma estrutura `abstrata` não tem geometria na cena; uma `regiao` tem, mas é uma nuvem sem contorno, e isolá-la deixa na tela um borrão que não ensina onde ela está. Nos dois casos não há estrutura a isolar, e o botão não existe — nem visível e inerte, nem substituído por uma explicação.
+
+`app/explorador.tsx` passa a concentrar a troca de foco num único caminho, que desliga o isolamento ao saltar para uma estrutura sem forma isolável: sem isso o usuário ficaria com a cena isolada e sem o botão que a restauraria. O isolamento por URL continua funcionando para qualquer estrutura, inclusive as abstratas, preservando as capturas de `validate-visual.mjs`.
+
+`app/explorador.tsx` também remove o botão de recolher listas do painel de sistemas. Ele exibia um traço que se lia como separador, não como controle, e a distinção entre expansão editorial e visibilidade na cena — exigida por E33 — permanece garantida pela caixa de seleção de cada sistema, que continua sendo o único controle de visibilidade.

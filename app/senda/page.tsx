@@ -14,10 +14,11 @@ export default function Senda() {
   return (
     <PaginaTexto
       atual="/senda"
+      largura="larga"
       titulo="A senda sétupla"
       subtitulo="A fé não é um degrau: é a chave que os abre. Os sete graus seguem a ordem da Segunda Epístola de Pedro, e cada um deles corresponde a uma mudança que o livro afirma ser corporal — não apenas mística."
     >
-      <MiniCena />
+      <div className="senda-grade">
       <ol className="space-y-16 lg:pr-0 xl:max-w-2xl">
         {SENDA.map((d) => (
           <li key={d.grau} id={`grau-${d.grau}`} data-grau={d.grau} className="scroll-mt-24">
@@ -78,6 +79,8 @@ export default function Senda() {
           </li>
         ))}
       </ol>
+      <MiniCena />
+      </div>
     </PaginaTexto>
   );
 }

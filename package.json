@@ -9,6 +9,7 @@
     "start": "next start",
     "check": "tsc --noEmit",
     "build:anatomia": "node scripts/construir-anatomia.mjs",
+    "build:ambiente": "node scripts/construir-ambiente.mjs",
     "validate:corpus": "node scripts/validate-corpus.mjs",
     "validate:scene": "node scripts/validate-scene.mjs",
     "test:e2e": "playwright test",

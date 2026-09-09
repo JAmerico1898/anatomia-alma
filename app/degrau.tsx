@@ -22,16 +22,16 @@ export function CartaoDoDegrau({
   const chave = degrau.grau === 0;
 
   return (
-    <aside
+    <aside data-ocupa="painel"
       aria-label={`Degrau da senda: ${degrau.nome}`}
-      className="vidro pointer-events-auto flex max-h-full w-full flex-col overflow-hidden rounded-t-lg lg:max-w-xs lg:rounded-lg lg:max-h-[calc(100dvh-11rem)]"
+      className="cartao-atlas vidro pointer-events-auto flex max-h-full w-full flex-col overflow-hidden rounded-t-lg lg:max-w-sm lg:rounded-lg lg:max-h-[calc(100dvh-11rem)]"
     >
-      <header className="border-b border-[var(--color-borda)] px-4 py-3">
+      <header className="shrink-0 border-b border-[var(--color-borda)] px-4 py-3">
         <span className="rotulo text-[var(--color-rosa)]">
           {natural ? 'Antes da senda' : chave ? 'A chave · primeira ruptura' : `Grau ${degrau.grau} de 7`}
         </span>
         <h2 className="mt-1 text-lg font-semibold leading-tight">{degrau.nome}</h2>
-        <p className="mt-1 text-xs leading-relaxed text-[var(--color-texto-2)]">
+        <p className="mt-1 text-sm leading-relaxed text-[var(--color-texto-2)]">
           {degrau.mudancaCorporal}
         </p>
       </header>
@@ -44,7 +44,7 @@ export function CartaoDoDegrau({
           <div className="mt-2 space-y-3">
             {degrau.citacoes.map((c, i) => (
               <figure key={i} className="border-l-2 border-[var(--color-borda)] pl-3">
-                <blockquote className="serifa text-xs leading-relaxed text-[var(--color-texto-2)]">
+                <blockquote className="serifa text-sm leading-relaxed text-[var(--color-texto-2)]">
                   “{c.texto}”
                 </blockquote>
                 <figcaption className="mt-1 text-[11px] text-[var(--color-texto-3)]">
@@ -68,7 +68,7 @@ export function CartaoDoDegrau({
                   <li key={id}>
                     <button
                       onClick={() => onIrPara(id)}
-                      className="flex items-center gap-1.5 rounded-full border border-[var(--color-borda)] px-2.5 py-0.5 text-xs text-[var(--color-texto-2)] transition-colors hover:border-[var(--color-rosa)] hover:text-[var(--color-texto)]"
+                      className="flex items-center gap-1.5 rounded-full border border-[var(--color-borda)] px-2.5 py-0.5 text-sm text-[var(--color-texto-2)] transition-colors hover:border-[var(--color-rosa)] hover:text-[var(--color-texto)]"
                     >
                       <span
                         aria-hidden
@@ -85,10 +85,10 @@ export function CartaoDoDegrau({
         ) : null}
       </div>
 
-      <footer className="border-t border-[var(--color-borda)] px-4 py-2">
+      <footer className="shrink-0 border-t border-[var(--color-borda)] px-4 py-2">
         <Link
           href={`/senda#grau-${degrau.grau}`}
-          className="text-xs text-[var(--color-rosa)] underline underline-offset-2"
+          className="text-sm text-[var(--color-rosa)] underline underline-offset-2"
         >
           Ler o degrau inteiro em A senda
         </Link>

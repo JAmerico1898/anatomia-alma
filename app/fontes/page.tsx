@@ -140,8 +140,8 @@ export default function Fontes() {
           <p>
             O que não é órgão continua sendo geometria gerada por código: as camadas do microcosmo,
             os três santuários, a rosa-do-coração, a cundalini, a medula espinal, os cordões do
-            simpático e as correntes de partículas. Nada disso existe como malha porque nada disso é
-            objeto de dissecação.
+            simpático e as correntes de partículas. O projeto não adotou malhas para essas estruturas;
+            medula espinal e cordões do simpático são estruturas anatômicas.
           </p>
           <p>
             Este é um atlas de estudo, não uma ferramenta diagnóstica ou cirúrgica. As dependências

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import type { Estrutura, FormaGeometrica, Vec3 } from '../corpus/tipos';
 import type { Anatomia } from './anatomia';
 import {
@@ -129,7 +130,11 @@ export function construirForma(e: Estrutura, anatomia: Anatomia): Construida {
     case 'anel': {
       const material = materialDeFoco(cor);
       const malha = new THREE.Mesh(
-        new THREE.TorusGeometry(f.raio, f.espessura, 8, 40),
+        mergeGeometries(Array.from({ length: 28 }, (_, i) => {
+          const a = i * Math.PI * 2 / 28;
+          return new THREE.SphereGeometry(f.espessura * 0.82, 10, 8)
+            .translate(Math.cos(a) * f.raio, Math.sin(a) * f.raio, 0);
+        })),
         material,
       );
       malha.position.copy(v(e.posicao));
@@ -165,6 +170,8 @@ export function construirForma(e: Estrutura, anatomia: Anatomia): Construida {
       const pontos = new THREE.Points(g, material);
       pontos.userData.curva = c;
       pontos.userData.fase = fase;
+      pontos.userData.largura = e.id === 'formas-pensamento' ? 0.075 : 0.006;
+      avancarCorrente(pontos, 0);
       // Partículas são alvo ruim de clique; a corrente é alcançada pelo painel,
       // pela busca e pelo realce a partir das estruturas a que se liga.
       return { objeto: pontos, ancora: c.getPointAt(0.5), alvos: [], materiais: [material] };
@@ -186,7 +193,8 @@ export function construirForma(e: Estrutura, anatomia: Anatomia): Construida {
           const y = 1 - 2 * ((i + 0.5) / f.focos);
           const a = i * 2.399963 + defasagem;
           const xz = Math.sqrt(1 - y * y);
-          pos.set([e.posicao[0] + f.raio * xz * Math.cos(a), e.posicao[1] + f.raio * y, e.posicao[2] + f.raio * xz * Math.sin(a)], i * 3);
+          const raio = f.raio * (0.84 + 0.16 * (0.5 + 0.5 * Math.sin(i * 7.13)));
+          pos.set([e.posicao[0] + raio * xz * Math.cos(a), e.posicao[1] + raio * y, e.posicao[2] + raio * xz * Math.sin(a)], i * 3);
           const h = Math.sin((i + 1) * 12.9898 + defasagem) * 43758.5453;
           ordem[i] = h - Math.floor(h);
         }
@@ -224,6 +232,11 @@ export function avancarCorrente(pontos: THREE.Points, delta: number): void {
   for (let i = 0; i < fase.length; i++) {
     fase[i] = (fase[i]! + delta) % 1;
     c.getPointAt(fase[i]!, p);
+    const largura = (pontos.userData.largura as number) * Math.sin(Math.PI * fase[i]!) ** 0.5;
+    const concentracao = 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(fase[i]! * Math.PI * 12));
+    p.x += Math.sin(i * 12.9898) * largura * concentracao;
+    p.y += Math.sin(i * 7.233) * largura * concentracao;
+    p.z += Math.cos(i * 4.137) * largura * concentracao;
     attr.setXYZ(i, p.x, p.y, p.z);
   }
   attr.needsUpdate = true;

@@ -255,6 +255,16 @@ export function construirCena(anatomia: Anatomia): CenaConstruida {
             std.emissiveIntensity *= 1 - extincao;
           }
           std.opacity = Math.min(1, std.opacity);
+          if (std.userData.orgao) {
+            const foco = estado.foco ? nos.get(estado.foco) : undefined;
+            const revelar = foco && foco !== no && new THREE.Box3().setFromObject(no.objeto).containsPoint(foco.ancora);
+            std.opacity = revelar ? 0.18 : 1 - extincao * 0.94;
+            const transparente = std.opacity < 1;
+            if (std.transparent !== transparente) { std.transparent = transparente; std.needsUpdate = true; }
+            std.depthWrite = !revelar;
+            std.emissiveIntensity = 0.035 + t * 0.09 + realce * 0.1;
+            std.roughness = 0.68 - realce * 0.18;
+          }
         }
 
         const camada = m as THREE.ShaderMaterial;
@@ -344,7 +354,8 @@ export function construirCena(anatomia: Anatomia): CenaConstruida {
       const direcao = b.clone().sub(a);
       const seta = new THREE.ArrowHelper(direcao.clone().normalize(), a, direcao.length(), 0x6f6251, 0.025, 0.014);
       seta.userData.relacao = r;
-      seta.visible = estado.foco === r.origem || estado.foco === r.destino;
+      seta.visible = (estado.foco === r.origem || estado.foco === r.destino)
+        && (!estado.isolar || (nos.get(r.origem)?.objeto.visible === true && nos.get(r.destino)?.objeto.visible === true));
       setas.add(seta);
     }
     atualizarMatrizes();

@@ -32,7 +32,7 @@ export interface ParteAnatomica {
   /** Já desquantizadas: o arquivo guarda Uint16 relativos à caixa da peça. */
   posicoes: Float32Array;
   normais: Int16Array;
-  indices: Uint16Array;
+  indices: Uint16Array | Uint32Array;
   caixa: readonly [Vec3, Vec3];
   centro: Vec3;
   /** Ponto SOBRE a malha, mais próximo do centro da caixa. */
@@ -53,6 +53,7 @@ interface ManifestoParte {
   malhasDeOrigem: number;
   vertices: number;
   triangulos: number;
+  bitsIndices?: number;
   posicoes: number;
   normais: number;
   indices: number;
@@ -96,7 +97,7 @@ export function decodificarAnatomia(manifesto: Manifesto, bin: ArrayBuffer): Ana
       malhasDeOrigem: p.malhasDeOrigem,
       posicoes,
       normais: new Int16Array(bin, p.normais, p.vertices * 3),
-      indices: new Uint16Array(bin, p.indices, p.triangulos * 3),
+      indices: new (p.bitsIndices === 32 ? Uint32Array : Uint16Array)(bin, p.indices, p.triangulos * 3),
       caixa: [v3(p.caixa[0]), v3(p.caixa[1])],
       centro: v3(p.centro),
       ancora: v3(p.ancora),

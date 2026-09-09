@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ESTRUTURAS,
@@ -10,12 +10,14 @@ import {
   SISTEMAS,
   buscarEstruturas,
   estruturasDoSistema,
+  podeIsolar,
 } from './corpus/corpus';
 import type { Grau, SistemaId } from './corpus/tipos';
 import { Detalhe } from './detalhe';
 import { CartaoDoDegrau } from './degrau';
 import { escreverEstado, lerEstado, legenda, type EstadoUrl } from './estado';
 import { Cena, type Vista } from './scene/cena';
+import { Presenca } from './components/presenca';
 
 const TODOS = SISTEMAS.map((s) => s.id);
 
@@ -45,15 +47,12 @@ const VISTAS: { id: Vista; rotulo: string }[] = [
 ];
 
 export function Explorador() {
-  const router = useRouter();
   const params = useSearchParams();
   const urlAtual = params.toString();
 
-  // A URL continua sendo o estado inteiro (§9), mas ela não pode estar no
-  // caminho crítico de um slider: cada `router.replace` é uma navegação do App
-  // Router, e a 60 Hz isso engasga a cena. O estado vive aqui e ESPELHA-SE na
-  // URL com atraso; a leitura da URL só volta a mandar quando a mudança veio
-  // de fora (link colado, voltar/avançar).
+  // A URL continua sendo o estado inteiro (§9). A History API integrada ao
+  // Next sincroniza useSearchParams sem navegar ao servidor. A leitura da URL
+  // só volta a mandar quando a mudança veio de fora (link, voltar/avançar).
   const [estado, setEstado] = useState<EstadoUrl>(() =>
     lerEstado(new URLSearchParams(urlAtual)),
   );
@@ -101,8 +100,7 @@ export function Explorador() {
 
   /**
    * `continuo` marca as mudanças que chegam a 60 Hz — só os dois sliders. Elas
-   * escrevem a URL com atraso, porque `router.replace` é uma navegação do App
-   * Router e a cada quadro isso engasga a cena. Toda mudança discreta — uma
+   * agrupam escritas no histórico. Toda mudança discreta — uma
    * seleção, um degrau, um sistema — escreve na hora: adiar o link não compra
    * fluidez nenhuma ali, e deixa a URL atrás do que se vê na tela.
    */
@@ -115,12 +113,25 @@ export function Explorador() {
       ultimaUrlEscrita.current = url;
       if (espera.current) clearTimeout(espera.current);
       if (continuo) {
-        espera.current = setTimeout(() => router.replace(url, { scroll: false }), 180);
+        espera.current = setTimeout(() => window.history.replaceState(null, '', url), 180);
       } else {
-        router.replace(url, { scroll: false });
+        window.history.replaceState(null, '', url);
       }
     },
-    [router],
+    [],
+  );
+
+  /**
+   * Trocar de foco. O isolamento não sobrevive a um salto para uma estrutura
+   * sem forma isolável: o botão que o desfaria não existe no card dela, e o
+   * usuário ficaria com a cena isolada e sem saída.
+   */
+  const irPara = useCallback(
+    (id: string | null) => {
+      const e = id ? ESTRUTURA_POR_ID.get(id) : null;
+      atualizar({ foco: id, isolar: !!e && estadoRef.current.isolar && podeIsolar(e) });
+    },
+    [atualizar],
   );
 
   // Percurso automático da senda. O relógio é um `setTimeout` por degrau, e não
@@ -162,7 +173,7 @@ export function Explorador() {
   const textoLegenda = legenda(estado, foco?.nome ?? null, degrau.nome);
 
   return (
-    <div className="papel relative h-dvh w-full overflow-hidden">
+    <div data-explorador className="papel relative h-dvh w-full overflow-hidden">
       <div
         role="img"
         aria-label={`Microcosmo em três dimensões. ${textoLegenda}. ${
@@ -178,12 +189,12 @@ export function Explorador() {
           isolar={estado.isolar}
           vista={vista}
           rotacaoAutomatica={rotacao}
-          onSelecionar={(id) => atualizar({ foco: id, isolar: id ? estado.isolar : false })}
+          onSelecionar={irPara}
         />
       </div>
 
       {/* ── Cabeçalho */}
-      <header className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between gap-3 p-4">
+      <header data-ocupa="topo" className="cabecalho-atlas pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between gap-3 p-4">
         <div className="vidro pointer-events-auto rounded-lg px-4 py-2.5">
           <p className="text-sm font-semibold">Anatomia da Alma</p>
           <nav aria-label="Seções" className="mt-1 flex gap-3 text-xs">
@@ -210,6 +221,7 @@ export function Explorador() {
 
       {/* ── Painel Sistemas */}
       <div
+        data-ocupa="esquerda"
         className={`absolute bottom-0 left-0 top-0 z-20 flex w-56 max-w-[80vw] flex-col p-3 pt-20 pb-24 transition-transform lg:translate-x-0 ${
           painelAberto ? 'translate-x-0' : '-translate-x-[110%]'
         }`}
@@ -225,20 +237,21 @@ export function Explorador() {
       {/* ── Dock */}
       <div
         ref={dock}
+        data-ocupa="base"
         className="pointer-events-none absolute inset-x-0 bottom-0 z-30 flex flex-col items-center gap-2 p-4"
       >
         <p className="rotulo text-center text-[var(--color-texto-3)]">{textoLegenda}</p>
 
-        <div className="vidro pointer-events-auto flex w-full max-w-2xl flex-wrap items-center gap-x-4 gap-y-2 rounded-lg px-3 py-2">
+        <div className="dock-controles vidro pointer-events-auto flex w-full max-w-2xl flex-wrap items-center gap-x-4 gap-y-2 rounded-lg px-3 py-2">
           <button
             onClick={() => setPainelAberto((v) => !v)}
             aria-expanded={painelAberto}
-            className="min-h-9 rounded-md border border-[var(--color-borda)] px-2.5 text-xs text-[var(--color-texto-2)] lg:hidden"
+            className="min-h-11 min-w-11 rounded-md border border-[var(--color-borda)] px-2.5 text-xs text-[var(--color-texto-2)] lg:hidden"
           >
             Sistemas
           </button>
 
-          <div className="flex min-w-0 grow items-center gap-2">
+          <div className="senda-controles flex min-w-0 grow items-center gap-2">
             <label htmlFor="grau" className="rotulo shrink-0 text-[var(--color-texto-3)]">
               Senda
             </label>
@@ -246,7 +259,7 @@ export function Explorador() {
               onClick={() => atualizar({ grau: Math.max(-1, estado.grau - 1) as Grau })}
               disabled={estado.grau === -1}
               aria-label="Degrau anterior"
-              className="min-h-9 shrink-0 rounded-md border border-[var(--color-borda)] px-2 text-xs text-[var(--color-texto-2)] disabled:opacity-30"
+              className="min-h-11 min-w-11 shrink-0 rounded-md border border-[var(--color-borda)] px-2 text-xs text-[var(--color-texto-2)] disabled:opacity-30"
             >
               ‹
             </button>
@@ -264,7 +277,7 @@ export function Explorador() {
               onClick={() => atualizar({ grau: Math.min(7, estado.grau + 1) as Grau })}
               disabled={estado.grau === 7}
               aria-label="Próximo degrau"
-              className="min-h-9 shrink-0 rounded-md border border-[var(--color-borda)] px-2 text-xs text-[var(--color-texto-2)] disabled:opacity-30"
+              className="min-h-11 min-w-11 shrink-0 rounded-md border border-[var(--color-borda)] px-2 text-xs text-[var(--color-texto-2)] disabled:opacity-30"
             >
               ›
             </button>
@@ -277,13 +290,15 @@ export function Explorador() {
               aria-pressed={percorrendo}
               aria-label={percorrendo ? 'Pausar o percurso da senda' : 'Percorrer a senda'}
               title={percorrendo ? 'Pausar' : 'Percorrer a senda, um degrau a cada 2,2 s'}
-              className={`min-h-9 shrink-0 rounded-md border border-[var(--color-borda)] px-2.5 text-xs ${
+              className={`min-h-11 min-w-11 shrink-0 rounded-md border border-[var(--color-borda)] px-2.5 text-xs ${
                 percorrendo ? 'text-[var(--color-rosa)]' : 'text-[var(--color-texto-2)]'
               }`}
             >
-              {percorrendo ? '❚❚' : '▶'}
+              <svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                {percorrendo ? <path d="M3 2h3v12H3zm7 0h3v12h-3z" /> : <path d="M4 2v12l10-6z" />}
+              </svg>
             </button>
-            <span className="w-28 shrink-0 truncate text-xs text-[var(--color-texto-2)]">
+            <span className="legenda-senda text-xs text-[var(--color-texto-2)]">
               {estado.grau < 0 ? 'antes da senda' : estado.grau === 0 ? 'chave · primeira ruptura' : `grau ${estado.grau}`} · {degrau.nome}
             </span>
           </div>
@@ -310,7 +325,7 @@ export function Explorador() {
                 onClick={() => setVista(v.id)}
                 aria-pressed={vista === v.id}
                 disabled={estado.separar >= 0.8 && v.id === 'tres-quartos'}
-                className={`min-h-9 rounded-md px-2 text-xs disabled:opacity-30 ${
+                className={`min-h-11 min-w-11 rounded-md px-2 text-xs disabled:opacity-30 ${
                   vista === v.id ? 'text-[var(--color-rosa)]' : 'text-[var(--color-texto-3)]'
                 }`}
               >
@@ -321,7 +336,7 @@ export function Explorador() {
               onClick={() => setRotacao((r) => !r)}
               aria-pressed={rotacao}
               disabled={estado.separar >= 0.8}
-              className={`min-h-9 rounded-md px-2 text-xs disabled:opacity-30 ${
+              className={`min-h-11 min-w-11 rounded-md px-2 text-xs disabled:opacity-30 ${
                 rotacao ? 'text-[var(--color-rosa)]' : 'text-[var(--color-texto-3)]'
               }`}
             >
@@ -334,7 +349,7 @@ export function Explorador() {
       {/* ── Sheet da direita: a estrutura selecionada ou, na falta dela, o degrau.
            Em tela estreita o card do degrau some: ali ele cobriria a figura, que
            é o que o degrau está explicando. */}
-      {estado.foco || telaLarga ? (
+      <Presenca>{estado.foco || telaLarga ? (
         <div
           style={telaLarga ? undefined : { bottom: alturaDaDock }}
           className="pointer-events-none absolute inset-x-0 bottom-0 z-30 flex max-h-[42dvh] justify-end p-0 lg:inset-y-0 lg:bottom-auto lg:max-h-none lg:p-3 lg:pt-20">
@@ -343,19 +358,20 @@ export function Explorador() {
               id={estado.foco}
               isolando={estado.isolar}
               onIsolar={(v) => atualizar({ isolar: v })}
-              onIrPara={(id) => atualizar({ foco: id })}
+              onIrPara={irPara}
               onFechar={() => atualizar({ foco: null, isolar: false })}
             />
           ) : (
-            <CartaoDoDegrau degrau={degrau} onIrPara={(id) => atualizar({ foco: id })} />
+            <CartaoDoDegrau degrau={degrau} onIrPara={irPara} />
           )}
         </div>
       ) : null}
 
+      </Presenca>
       {buscaAberta ? (
         <Busca
           onEscolher={(id) => {
-            atualizar({ foco: id });
+            irPara(id);
             setBuscaAberta(false);
           }}
           onFechar={() => setBuscaAberta(false)}
@@ -387,7 +403,7 @@ function PainelSistemas({
           <button
             key={p.rotulo}
             onClick={() => onSistemas(p.sistemas)}
-            className="rounded-full border border-[var(--color-borda)] px-2 py-0.5 text-[11px] text-[var(--color-texto-3)] transition-colors hover:text-[var(--color-texto)]"
+            className="min-h-11 min-w-11 rounded-full border border-[var(--color-borda)] px-2 py-0.5 text-[11px] text-[var(--color-texto-3)] transition-colors hover:text-[var(--color-texto)]"
           >
             {p.rotulo}
           </button>
@@ -417,7 +433,7 @@ function PainelSistemas({
                 <button
                   onClick={() => onSistemas([s.id])}
                   title={`Isolar ${s.nome}`}
-                  className="flex min-w-0 items-center gap-1.5 text-left text-xs"
+                  className="flex min-h-11 min-w-0 items-center gap-1.5 text-left text-xs"
                 >
                   <span
                     aria-hidden
@@ -435,14 +451,13 @@ function PainelSistemas({
                 </label>
               </div>
 
-              {ligado ? (
-                <ul className="mt-0.5 ml-5 space-y-px">
+              <ul className="mt-0.5 ml-5 space-y-px">
                   {estruturas.map((e) => (
                     <li key={e.id}>
                       <button
                         onClick={() => onFoco(e.id)}
                         aria-current={foco === e.id ? 'true' : undefined}
-                        className={`w-full rounded px-1.5 py-0.5 text-left text-xs transition-colors ${
+                        className={`min-h-11 w-full rounded px-1.5 py-2 text-left text-sm transition-colors ${
                           foco === e.id
                             ? 'bg-[var(--color-rosa)]/10 text-[var(--color-rosa)]'
                             : 'text-[var(--color-texto-2)] hover:text-[var(--color-texto)]'
@@ -451,9 +466,8 @@ function PainelSistemas({
                         {e.nome}
                       </button>
                     </li>
-                  ))}
-                </ul>
-              ) : null}
+                ))}
+              </ul>
             </div>
           );
         })}

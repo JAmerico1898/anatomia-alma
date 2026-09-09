@@ -36,7 +36,7 @@ const TOPO_Y = 0.5;
 /**
  * De estrutura do corpus para conceito anatômico (identificadores FMA, como no
  * `atlas.json`). `tris` é o orçamento de triângulos depois da simplificação:
- * o que importa aqui é a silhueta, não a histologia.
+ * Cinco peças de inspeção conservam a fonte (E29); as demais mantêm seu teto.
  */
 const MAPA = [
   { id: 'personalidade', conceito: 'FMA7163', tris: 20000 }, // pele
@@ -155,10 +155,11 @@ for (const s of selecao) {
     io += p.indexCount;
   }
 
-  // Simplificação: alvo em triângulos, com teto de erro generoso — estas
-  // malhas são lidas como silhueta luminosa, não como corte histológico.
+  // E29: preserva silhueta e relevos nas cinco peças comparadas por
+  // validate-detalhe.mjs. A quantização permanece mensurada, sem perda de faces.
   const alvo = Math.min(nIdx, s.tris * 3);
-  const [simplificados] = MeshoptSimplifier.simplify(indices, posicoes, 3, alvo, 0.05, ['LockBorder']);
+  const preservar = ['personalidade', 'hemisferio-direito', 'hemisferio-esquerdo', 'coluna-vertebral', 'figado'].includes(s.id);
+  const [simplificados, erro] = preservar ? [indices, 0] : MeshoptSimplifier.simplify(indices, posicoes, 3, alvo, 0.05, ['LockBorder']);
 
   // Compactação: só os vértices que sobraram vão para o arquivo.
   const remapa = new Int32Array(nVerts).fill(-1);
@@ -188,14 +189,14 @@ for (const s of selecao) {
 
   // Posições em Uint16 dentro da caixa da própria peça: com uma caixa de 20 cm,
   // um passo vale 3 micrômetros. O arquivo encolhe pela metade e nada do que a
-  // cena mostra muda. Índices em Uint16 quando cabem — e cabem em todas.
+  // cena mostra muda. Índices em Uint16 quando cabem, Uint32 nas peças maiores.
   const passo = max.map((v, k) => (v - min[k]) / 65535 || 1);
   const Pq = new Uint16Array(usados * 3);
   for (let i = 0; i < usados * 3; i++) {
     const k = i % 3;
     Pq[i] = Math.max(0, Math.min(65535, Math.round((P[i] - min[k]) / passo[k])));
   }
-  if (usados > 65536) throw new Error(`${s.id}: ${usados} vértices não cabem em Uint16`);
+  if (usados > 4294967295) throw new Error(`${s.id}: ${usados} vértices não cabem em Uint32`);
 
   // Âncora: o BARICENTRO do triângulo mais próximo do centro da caixa. Rótulo,
   // enquadramento e raycast precisam de um ponto sobre a malha — num par de
@@ -227,7 +228,8 @@ for (const s of selecao) {
     P: Pq,
     passo,
     N,
-    I: new Uint16Array(I),
+    I: usados > 65536 ? I : new Uint16Array(I),
+    erro,
     posicoesFlutuantes: P,
     caixa: [min, max],
     centro,
@@ -288,6 +290,10 @@ for (const c of construidas) {
     malhasDeOrigem: c.malhasDeOrigem,
     vertices: c.P.length / 3,
     triangulos: c.I.length / 3,
+    triangulosFonte: c.trisOriginais,
+    erroSimplificacao: c.erro,
+    bytes: c.P.byteLength + c.N.byteLength + c.I.byteLength,
+    bitsIndices: c.I.BYTES_PER_ELEMENT * 8,
     posicoes,
     normais,
     indices,

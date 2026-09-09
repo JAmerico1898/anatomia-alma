@@ -1,5 +1,9 @@
 import { defineConfig, devices } from '@playwright/test';
 
+// Uma execução do portão sempre inicia o build que acabou de verificar.
+// PORT permite isolar a verificação quando há um dev server de outro processo.
+const baseURL = `http://127.0.0.1:${process.env.PORT ?? '3000'}`;
+
 export default defineConfig({
   testDir: './playwright',
   // WebGL por software é pesado: cinco cenas simultâneas tornam os testes
@@ -14,7 +18,7 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   reporter: process.env.CI ? 'github' : 'list',
   use: {
-    baseURL: 'http://127.0.0.1:3000',
+    baseURL,
     trace: 'on-first-retry',
     // WebGL por SwiftShader: sem isto, o navegador headless não cria contexto e
     // a cena simplesmente não monta.
@@ -29,8 +33,8 @@ export default defineConfig({
   ],
   webServer: {
     command: 'npm run start',
-    url: 'http://127.0.0.1:3000',
-    reuseExistingServer: !process.env.CI,
+    url: baseURL,
+    reuseExistingServer: false,
     timeout: 120_000,
   },
 });
